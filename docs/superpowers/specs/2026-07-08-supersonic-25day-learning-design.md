@@ -72,8 +72,8 @@ custom hooks、useCallback/useMemo、Context Provider 等高级模式不单独�
 |---|------|---------|
 | Day 1 | 项目跑通 | Maven build + Java 启动后端 + MySQL + LLM key + pnpm dev 前端 |
 | Day 2 | 前端项目结构全景分析 | ① 包职责地图（supersonic-fe vs chat-sdk）② 路由与页面映射（/chat, /model, /agent, /login, /system 等）③ 组件树层级（ChatProvider → Chat → ChatItem → ChatMsg）④ 状态流转图（一次对话的完整状态机） |
-| Day 3 | 前端工程化速览 | pnpm workspace 概念、Rollup 打包原理、UmiJS 约定式路由/代理/插件体系、Less 基础、config.ts 解读 |
-| Day 4 | 组件树 + 状态流转深入 | 从 URL 输入到页面渲染的完整路径追踪；关键 hooks 职责划分（usePolling/useChat/useModel）；chat-sdk 如何被宿主消费 |
+| Day 3 | 前端工程化速览 + 方案对比 | ① pnpm workspace vs npm/yarn workspaces vs Turborepo/Lerna ② Rollup vs Webpack vs Vite vs esbuild ③ UmiJS vs CRA vs Next.js ④ 同源方案对比（为什么选当前这套）⑤ SuperSonic config.ts 精读（代理/路由/权限/环境变量/antd/MFSU） |
+| Day 4 | 自定义 Hooks 基础 + 组件树/状态流转 | ① 自定义 Hook 基础：规则（use 前缀/顶层调用/纯函数）、常见模式（封装状态逻辑、复用副作用）、手写一个 mini usePolling ② 组件树层级深入：ChatProvider → Chat → ChatItem → ChatMsg ③ 状态流转图：一次对话的完整状态机（parseResult→msgData→queryMode→currentParseInfo）④ chat-sdk 如何被宿主消费 |
 
 **Layer 1 产出**：`docs/面经/01-全局观/` 4 篇，每篇 5 个 Q&A。
 
