@@ -1,0 +1,17 @@
+services:
+  csmar_postgres:
+    image: postgres:17
+    container_name: csmar_postgres
+    environment:
+      POSTGRES_DB: csmar
+      POSTGRES_USER: csmar_user
+      POSTGRES_PASSWORD: csmar_password
+    ports:
+      - "15433:5432"
+    volumes:
+      - ./csmar_pg/data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U csmar_user -d csmar"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
