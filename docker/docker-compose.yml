@@ -25,47 +25,48 @@ services:
       timeout: 10s
       retries: 5
 
-  supersonic_standalone:
-    image: supersonicbi/supersonic:${SUPERSONIC_VERSION:-latest}
-    privileged: true
-    container_name: supersonic_standalone
-    environment:
-      S2_DB_TYPE: postgres
-      S2_DB_HOST: supersonic_postgres
-      S2_DB_PORT: 5432
-      S2_DB_DATABASE: postgres
-      S2_DB_USER: supersonic_user
-      S2_DB_PASSWORD: supersonic_password
-    ports:
-      - "9080:9080"
-    deploy:
-      resources:
-        limits:
-          cpus: "2.0"
-          memory: 2048M
-    depends_on:
-      supersonic_postgres:
-        condition: service_healthy
-    networks:
-      - supersonic_network
-    dns:
-      - 114.114.114.114
-      - 8.8.8.8
-      - 8.8.4.4
-    #volumes:
-      #1.Named Volumes are best for persistent data managed by Docker.
-      #- supersonic_data:/usr/src/app/supersonic-standalone-${SUPERSONIC_VERSION:-latest}
-      #2.Bind Mounts are suitable for frequent modifications and debugging.
-      #      - ./conf/application-prd.yaml:/usr/src/app/supersonic-standalone-${SUPERSONIC_VERSION:-latest}/conf/application-prd.yaml
-      #3.Detailed Bind Mounts offer more control over the mount behavior.
-      #      - type: bind
-      #        source: ./supersonic-standalone-${SUPERSONIC_VERSION:-latest}/logs
-      #        target: /usr/src/app/supersonic-standalone-${SUPERSONIC_VERSION:-latest}/logs
-      #        bind:
-      #          propagation: rprivate
-      #          create_host_path: true
-#volumes:
-#  supersonic_data:
+# supersonic_standalone service commented out — running locally from source instead.
+#  supersonic_standalone:
+#    image: supersonicbi/supersonic:${SUPERSONIC_VERSION:-latest}
+#    privileged: true
+#    container_name: supersonic_standalone
+#    environment:
+#      S2_DB_TYPE: postgres
+#      S2_DB_HOST: supersonic_postgres
+#      S2_DB_PORT: 5432
+#      S2_DB_DATABASE: postgres
+#      S2_DB_USER: supersonic_user
+#      S2_DB_PASSWORD: supersonic_password
+#    ports:
+#      - "9080:9080"
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: "2.0"
+#          memory: 2048M
+#    depends_on:
+#      supersonic_postgres:
+#        condition: service_healthy
+#    networks:
+#      - supersonic_network
+#    dns:
+#      - 114.114.114.114
+#      - 8.8.8.8
+#      - 8.8.4.4
+#    #volumes:
+#      #1.Named Volumes are best for persistent data managed by Docker.
+#      #- supersonic_data:/usr/src/app/supersonic-standalone-${SUPERSONIC_VERSION:-latest}
+#      #2.Bind Mounts are suitable for frequent modifications and debugging.
+#      #      - ./conf/application-prd.yaml:/usr/src/app/supersonic-standalone-${SUPERSONIC_VERSION:-latest}/conf/application-prd.yaml
+#      #3.Detailed Bind Mounts offer more control over the mount behavior.
+#      #      - type: bind
+#      #        source: ./supersonic-standalone-${SUPERSONIC_VERSION:-latest}/logs
+#      #        target: /usr/src/app/supersonic-standalone-${SUPERSONIC_VERSION:-latest}/logs
+#      #        bind:
+#      #          propagation: rprivate
+#      #          create_host_path: true
+##volumes:
+##  supersonic_data:
 
 networks:
   supersonic_network:
