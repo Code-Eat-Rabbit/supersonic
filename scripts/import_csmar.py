@@ -86,7 +86,7 @@ def import_table(file_rel, table_name):
     # 写入 PostgreSQL
     engine = create_engine(PG_URL)
     chunksize = 50000 if rows > 100000 else rows
-    with engine.raw_connection() as conn:
+    with engine.connect() as conn:
         df.to_sql(table_name, conn, if_exists="replace", index=False,
                   chunksize=chunksize, method="multi")
     print(f"  → {table_name}: written")
