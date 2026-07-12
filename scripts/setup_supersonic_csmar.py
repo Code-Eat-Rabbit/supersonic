@@ -11,18 +11,18 @@ PG_USER = "csmar_user"
 PG_PASS = "csmar_password"
 PG_URL = f"jdbc:postgresql://{PG_HOST}:{PG_PORT}/{PG_DB}"
 
-# 10 张 CSMAR 表
-TABLES = [
-    "af_cfeature_profile",
-    "en_equity_nature",
-    "ist_manage_shares_change",
-    "ist_sec_market_shares_change",
-    "cg_ybasic",
-    "bdt_mana_gov_abil",
-    "bdt_fin_const_fc",
-    "bdt_fin_index",
-    "cg_director",
-    "cg_manager_share_salary",
+# 10 张 CSMAR 表 (中文名 → 英文表名)
+TABLE_MAP = [
+    ("上市公司基本信息", "af_cfeature_profile"),
+    ("股权性质", "en_equity_nature"),
+    ("董监高持股变动", "ist_manage_shares_change"),
+    ("二级市场增减持", "ist_sec_market_shares_change"),
+    ("治理综合信息", "cg_ybasic"),
+    ("管理层治理能力", "bdt_mana_gov_abil"),
+    ("融资约束FC指数", "bdt_fin_const_fc"),
+    ("财务指标", "bdt_fin_index"),
+    ("高管个人资料", "cg_director"),
+    ("高管人数持股薪酬", "cg_manager_share_salary"),
 ]
 
 
@@ -103,23 +103,24 @@ def setup(token):
         }
     )
 
-    # 3. Datasets — try creating via dataSet endpoint
+    # 3. Datasets — 中文名 + 英文 bizName
     dataset_ids = []
-    for table in TABLES:
+    for cn_name, en_table in TABLE_MAP:
         ds_id = get_or_create(
-            token, table,
+            token, cn_name,
             "/api/semantic/dataSet/getDataSetList",
             "/api/semantic/dataSet",
             {
                 "domainId": domain_id,
-                "name": table,
-                "description": f"CSMAR {table}",
+                "name": cn_name,
+                "bizName": en_table,
+                "description": f"CSMAR {cn_name}",
                 "dataSetDetail": {
                     "dataSetModelConfigs": [{
                         "queryType": "table_query",
-                        "tableQuery": table,
+                        "tableQuery": en_table,
                         "dbType": "postgresql",
-                        "sqlQuery": f"SELECT * FROM {table}",
+                        "sqlQuery": f"SELECT * FROM {en_table}",
                         "dimensions": [],
                         "measures": [],
                         "identifiers": [],
