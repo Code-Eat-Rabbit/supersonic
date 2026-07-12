@@ -130,17 +130,22 @@ def setup(token):
         )
         dataset_ids.append(ds_id)
 
-    # 4. Agent
+    # 4. Agent — 通过 toolConfig 绑定数据集
     agent_resp = api_post(token, "/api/chat/agent", {
         "name": "CSMAR数据分析助手",
         "description": "查询CSMAR上市公司数据库：高管资料、持股变动、财务指标、治理信息等",
-        "dataSetIds": dataset_ids,
         "isOpen": 1,
         "admins": ["api_admin"],
         "viewers": [],
         "enableSearch": 1,
         "enableFeedback": 1,
         "status": 1,
+        "toolConfig": json.dumps({
+            "tools": [{
+                "type": "DATASET",
+                "dataSetIds": dataset_ids
+            }]
+        })
     })
     if agent_resp.get("code") == 200:
         print(f"✓ Agent created: id={agent_resp['data']['id']}")
