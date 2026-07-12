@@ -88,9 +88,11 @@ Spring Boot 启动时需要以下环境变量：
 | `S2_DB_TYPE` | `postgres` | 激活 postgres profile |
 | `S2_DB_HOST` | `localhost` | 覆盖默认的 127.0.0.1 |
 | `S2_DB_PORT` | `15432` | Docker PG 映射端口 |
+| `S2_DB_USER` | `supersonic_user` | PostgreSQL 用户名（与 docker-compose 一致） |
+| `S2_DB_PASSWORD` | `supersonic_password` | PostgreSQL 密码（与 docker-compose 一致） |
 | `DEEPSEEK_API_KEY` | `sk-xxx` | DeepSeek API Key |
 
-`S2_DB_USER`、`S2_DB_PASSWORD`、`S2_DB_DATABASE` 使用 application-postgres.yaml 的默认值（与 docker-compose 一致），无需额外设置。
+`S2_DB_DATABASE` 使用 application-postgres.yaml 默认值 `postgres`，无需额外设置。
 
 ## 启动流程
 
