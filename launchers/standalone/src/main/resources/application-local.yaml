@@ -1,0 +1,12 @@
+s2:
+  langchain4j:
+    chat-model:
+      provider: open_ai
+      openai:
+        base-url: https://api.deepseek.com
+        model-name: deepseek-v4-pro
+        api-key: ${DEEPSEEK_API_KEY:your-api-key-here}
+        temperature: 0.0
+        timeout: PT60S
+    embedding-model:
+      provider: in_process
