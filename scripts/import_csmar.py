@@ -83,10 +83,12 @@ def import_table(file_rel, table_name):
     rows = len(df)
     print(f"  → {table_name}: {rows} rows, {len(df.columns)} cols, reading...")
 
-    # 写入 PostgreSQL (分批处理大文件)
+    # 写入 PostgreSQL
+    engine = create_engine(PG_URL)
     chunksize = 50000 if rows > 100000 else rows
-    df.to_sql(table_name, PG_URL, if_exists="replace", index=False,
-              chunksize=chunksize, method="multi")
+    with engine.raw_connection() as conn:
+        df.to_sql(table_name, conn, if_exists="replace", index=False,
+                  chunksize=chunksize, method="multi")
     print(f"  → {table_name}: written")
 
     # 建索引
@@ -97,27 +99,23 @@ def import_table(file_rel, table_name):
                 f"CREATE INDEX IF NOT EXISTS {idx_name} "
                 f"ON {table_name}(stkcd, reptdt)"
             ))
+            conn.commit()
         if "personid" in df.columns:
             idx_name = f"idx_{table_name}_personid"
             conn.execute(text(
                 f"CREATE INDEX IF NOT EXISTS {idx_name} "
                 f"ON {table_name}(personid)"
             ))
+            conn.commit()
     engine.dispose()
     print(f"  ✓ {table_name}: {rows} rows")
 
 
 if __name__ == "__main__":
-    # Verify connectivity
-    import psycopg2
-    conn = psycopg2.connect(
-        host="localhost", port=15433, dbname="csmar",
-        user="csmar_user", password="csmar_password"
-    )
-    cur = conn.cursor()
-    cur.execute("SELECT 1")
-    cur.close()
-    conn.close()
+    engine = create_engine(PG_URL)
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+    engine.dispose()
 
     print(f"Importing {len(FILE_TABLE_MAP)} tables to {PG_URL}...")
     for file_rel, table_name in FILE_TABLE_MAP:
