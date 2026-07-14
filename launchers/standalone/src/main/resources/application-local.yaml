@@ -4,7 +4,7 @@ s2:
       provider: open_ai
       openai:
         base-url: https://api.deepseek.com
-        model-name: deepseek-v4-pro
+        model-name: deepseek-chat
         api-key: ${DEEPSEEK_API_KEY:your-api-key-here}
         temperature: 0.0
         timeout: PT60S

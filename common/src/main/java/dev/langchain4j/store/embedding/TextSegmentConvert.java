@@ -25,6 +25,8 @@ public class TextSegmentConvert {
                     .defaultAgg(item.getDefaultAgg()).name(item.getName())
                     .id(item.getId() + Constants.UNDERLINE)
                     .modelId(item.getModelId() + Constants.UNDERLINE)
+                    .dataSetId(item.getDataSetId() != null 
+                            ? item.getDataSetId() + Constants.UNDERLINE : null)
                     .domainId(item.getDomainId() + Constants.UNDERLINE).build();
 
             Map meta = JSONObject.parseObject(JSONObject.toJSONString(newItem), Map.class);

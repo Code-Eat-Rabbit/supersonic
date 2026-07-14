@@ -109,7 +109,7 @@ public class ModelConverter {
         }
         dimensionReq.setModelId(modelDO.getId());
         dimensionReq.setExpr(dim.getExpr());
-        dimensionReq.setType(dim.getType().name());
+        dimensionReq.setType(dim.getType());
         dimensionReq.setDataType(DataTypeEnums.of(dim.getDataType()));
         dimensionReq
                 .setDescription(Objects.isNull(dim.getDescription()) ? dimensionReq.getDescription()

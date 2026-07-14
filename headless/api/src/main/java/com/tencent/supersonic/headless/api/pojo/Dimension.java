@@ -15,7 +15,7 @@ public class Dimension {
 
     private String name;
 
-    private DimensionType type;
+    private String type;
 
     private String expr;
 
@@ -31,9 +31,18 @@ public class Dimension {
 
     private String description;
 
+    public DimensionType getTypeEnum() {
+        if (type == null) return null;
+        try {
+            return DimensionType.valueOf(type);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
     public Dimension(String name, String bizName, DimensionType type, Integer isCreateDimension) {
         this.name = name;
-        this.type = type;
+        this.type = type != null ? type.name() : null;
         this.isCreateDimension = isCreateDimension;
         this.bizName = bizName;
         this.expr = bizName;
@@ -42,7 +51,7 @@ public class Dimension {
     public Dimension(String name, String bizName, String expr, DimensionType type, String dataType,
             Integer isCreateDimension) {
         this.name = name;
-        this.type = type;
+        this.type = type != null ? type.name() : null;
         this.isCreateDimension = isCreateDimension;
         this.bizName = bizName;
         this.expr = expr;
@@ -52,7 +61,7 @@ public class Dimension {
     public Dimension(String name, String bizName, DimensionType type, Integer isCreateDimension,
             String expr, String dateFormat, DimensionTimeTypeParams typeParams) {
         this.name = name;
-        this.type = type;
+        this.type = type != null ? type.name() : null;
         this.expr = expr;
         this.dateFormat = dateFormat;
         this.typeParams = typeParams;

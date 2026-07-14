@@ -29,7 +29,7 @@ def get_pred_sql(query, url, agentId, chatId, authorization):
 
     start = time.time()
     try:
-        result = requests.post(url=url, headers=header, json=data, timeout=90)
+        result = requests.post(url=url, headers=header, json=data, timeout=30)
         latency_ms = (time.time() - start) * 1000
         traceId = "unknown"
         if result.status_code == 200:
@@ -70,9 +70,28 @@ def get_pred_result_multi_model(api_key_encrypted):
     url = config["url"]
     authorization = get_authorization()
 
-    # Build domain/models/agents for all 3 models
-    agents_info = build(api_key_encrypted)
-    print(f"Agents created: {json.dumps(agents_info, indent=2)}")
+    # Try to build domain/models/agents (idempotent), or reuse existing
+    try:
+        agents_info = build(api_key_encrypted)
+    except Exception as e:
+        print(f"Build step failed (may already exist): {e}")
+        # Fallback: query existing agents
+        agents_info = {}
+        import requests as req
+        exp = time.time() + 100000
+        secret = "WIaO9YRRVt+7QtpPvyWsARFngnEcbaKBk783uGFwMrbJBaochsqCH62L4Kijcb0sZCYoSsiKGV/zPml5MnZ3uQ=="
+        token = jwt.encode({"token_user_name": "admin", "exp": exp}, secret, algorithm="HS512")
+        header = {"Authorization": "Bearer " + token, "App-Key": "supersonic"}
+        resp = req.get(url + "/api/chat/agent/getAgentList", headers=header)
+        for agent in resp.json().get("data", []):
+            name = agent.get("name", "")
+            if "qwen" in name.lower():
+                agents_info["qwen3.7-plus"] = {"agent_id": agent["id"], "chat_id": 0}
+            elif "deepseek" in name.lower():
+                agents_info["deepseek-v4-flash"] = {"agent_id": agent["id"], "chat_id": 0}
+            elif "glm" in name.lower():
+                agents_info["glm-5.2"] = {"agent_id": agent["id"], "chat_id": 0}
+    print(f"Using agents: {json.dumps(agents_info, indent=2)}")
 
     all_results = {}
     model_order = ["qwen3.7-plus", "deepseek-v4-flash", "glm-5.2"]

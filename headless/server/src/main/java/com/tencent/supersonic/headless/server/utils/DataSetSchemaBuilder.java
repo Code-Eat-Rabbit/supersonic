@@ -98,7 +98,8 @@ public class DataSetSchemaBuilder {
         for (ModelResp modelResp : resp.getModelResps()) {
             dataTypeMap.put(modelResp.getId(),
                     modelResp.getModelDetail().getFields().stream().collect(Collectors
-                            .toMap(Field::getFieldName, Field::getDataType, (k1, k2) -> k2)));
+                            .toMap(Field::getFieldName, field -> field.getDataType() != null
+                                    ? field.getDataType() : "", (k1, k2) -> k2)));
         }
 
         for (DimSchemaResp dim : resp.getDimensions()) {

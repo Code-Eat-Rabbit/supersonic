@@ -178,7 +178,7 @@ public class SemanticSchemaManager {
         for (DimensionYamlTpl dimensionYamlTpl : dimensionYamlTpls) {
             Dimension dimension = new Dimension();
             if (Objects.nonNull(dimensionYamlTpl.getType())) {
-                dimension.setType(DimensionType.valueOf(dimensionYamlTpl.getType()));
+                dimension.setType(dimensionYamlTpl.getType());
             }
             dimension.setExpr(dimensionYamlTpl.getExpr());
             dimension.setName(dimensionYamlTpl.getName());

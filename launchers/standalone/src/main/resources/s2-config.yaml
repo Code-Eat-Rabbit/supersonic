@@ -20,7 +20,7 @@ s2:
     date: true
 
   demo:
-    names: S2VisitsDemo,S2SingerDemo,S2CompanyDemo,S2SmallTalkDemo
+    names: S2VisitsDemo,S2SingerDemo,S2CompanyDemo,S2SmallTalkDemo,上市公司基本信息,股权性质,董监高持股变动,二级市场增减持,治理综合信息
     enableLLM: true
 
   authentication:

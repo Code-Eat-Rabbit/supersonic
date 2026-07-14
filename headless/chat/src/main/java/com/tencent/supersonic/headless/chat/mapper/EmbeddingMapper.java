@@ -46,7 +46,7 @@ public class EmbeddingMapper extends BaseMapper {
 
         // 2. Build SchemaElementMatch based on match results
         for (EmbeddingResult matchResult : matchResults) {
-            Long elementId = Retrieval.getLongId(matchResult.getId());
+            Long elementId = Retrieval.getLongId(matchResult.getMetadata().get("id"));
             Long dataSetId = Retrieval.getLongId(matchResult.getMetadata().get("dataSetId"));
 
             // Skip if dataSetId is null

@@ -132,6 +132,16 @@ public class NL2SQLParser implements ChatQueryParser {
             // either the user or the system selects one parse from the candidate parses.
             if (Objects.isNull(parseContext.getRequest().getSelectedParse())
                     && parseContext.getResponse().getSelectedParses().isEmpty()) {
+                // Rule-based parsing found nothing, try LLM-only fallback
+                if (parseContext.enableLLM()) {
+                    QueryNLReq queryNLReq = QueryReqConverter.buildQueryNLReq(parseContext);
+                    queryNLReq.setText2SQLType(Text2SQLType.LLM_OR_RULE);
+                    queryNLReq.setMapModeEnum(MapModeEnum.ALL);
+                    queryNLReq.setDataSetIds(parseContext.getAgent().getDataSetIds());
+                    parseContext.setResponse(new ChatParseResp(parseContext.getResponse().getQueryId()));
+                    addDynamicExemplars(parseContext, queryNLReq);
+                    doParse(queryNLReq, parseContext.getResponse());
+                }
                 return;
             }
 

@@ -47,7 +47,7 @@ public class ModelDetail {
         if (CollectionUtils.isEmpty(dimensions)) {
             return Lists.newArrayList();
         }
-        return dimensions.stream().filter(dim -> DimensionType.partition_time.equals(dim.getType()))
+        return dimensions.stream().filter(dim -> DimensionType.partition_time.name().equals(dim.getType()))
                 .collect(Collectors.toList());
     }
 

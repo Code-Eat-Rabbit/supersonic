@@ -22,6 +22,8 @@ public class DataItem {
 
     private String domainId;
 
+    private String dataSetId;
+
     private String defaultAgg;
 
     public String getNewName() {

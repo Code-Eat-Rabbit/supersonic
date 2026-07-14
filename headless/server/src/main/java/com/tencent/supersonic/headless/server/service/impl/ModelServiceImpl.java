@@ -540,13 +540,13 @@ public class ModelServiceImpl implements ModelService {
                     Dimension dimension = dimOptional.get();
                     dimension.setExpr(dimensionReq.getExpr());
                     dimension.setName(dimensionReq.getName());
-                    dimension.setType(DimensionType.valueOf(dimensionReq.getType()));
+                    dimension.setType(dimensionReq.getType());
                     dimension.setDescription(dimensionReq.getDescription());
                     dimension.setDateFormat(dateFormat);
                 } else {
                     Dimension dimension = Dimension.builder().name(dimensionReq.getName())
                             .bizName(dimensionReq.getBizName()).expr(dimensionReq.getExpr())
-                            .type(DimensionType.valueOf(dimensionReq.getType()))
+                            .type(dimensionReq.getType())
                             .dateFormat(dateFormat).description(dimensionReq.getDescription())
                             .build();
                     modelDetail.getDimensions().add(dimension);

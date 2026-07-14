@@ -343,7 +343,23 @@ public class SqlBuilder {
             }
             tableView.setTable(DataModelNode.build(dataModel, scope));
         } catch (Exception e) {
-            log.error("Failed to create sqlNode for data model {}", dataModel);
+            log.error("Failed to create sqlNode for data model {}, using fallback", dataModel.getName());
+            try {
+                String tableRef = dataModel.getModelDetail().getTableQuery();
+                if (tableRef == null || tableRef.isEmpty()) {
+                    tableRef = dataModel.getModelDetail().getSqlQuery();
+                }
+                if (tableRef != null && !tableRef.isEmpty()) {
+                    if (!tableRef.toUpperCase().startsWith("SELECT")) {
+                        tableRef = "SELECT * FROM " + tableRef;
+                    }
+                    SqlParser sqlParser = SqlParser.create(tableRef, 
+                        Configuration.getParserConfig(engineType));
+                    tableView.setTable(sqlParser.parseQuery());
+                }
+            } catch (Exception e2) {
+                log.error("Fallback also failed", e2);
+            }
         }
 
         return tableView;
