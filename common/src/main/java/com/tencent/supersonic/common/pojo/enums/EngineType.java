@@ -15,7 +15,8 @@ public enum EngineType {
     PRESTO(12, "PRESTO"),
     TRINO(13, "TRINO"),
     ORACLE(14, "ORACLE"),
-    HIVE(15, "HIVE");
+    HIVE(15, "HIVE"),
+    SQLITE(16, "SQLITE");
 
     private Integer code;
 
