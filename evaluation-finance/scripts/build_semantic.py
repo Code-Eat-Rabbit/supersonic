@@ -223,7 +223,7 @@ def main():
             print(f"  {tmpl['name']} exists: id={found}")
             continue
 
-        result = api_post("/api/semantic/model/createModel", {
+        api_post("/api/semantic/model/createModel", {
             "name": tmpl["name"],
             "bizName": tmpl["bizName"],
             "description": tmpl["description"],
@@ -245,14 +245,9 @@ def main():
             "admins": ["admin"],
             "adminOrgs": [],
         })
-        if isinstance(result, dict):
-            mid = result.get("id")
-        elif isinstance(result, (int, float)):
-            mid = int(result)
-        else:
-            # Retry: fetch existing models
-            models = api_get(f"/api/semantic/model/getModelList/{domain_id}")
-            mid = models[-1]["id"]
+        # Always re-fetch model ID from API (createModel returns boolean, not ID)
+        models = api_get(f"/api/semantic/model/getModelList/{domain_id}")
+        mid = models[-1]["id"]
         model_ids[biz] = mid
         print(f"  {tmpl['name']} created: id={mid}")
 
@@ -268,7 +263,10 @@ def main():
             "fromModelId": from_id,
             "toModelId": to_id,
             "joinType": "inner join",
-            "joinConditions": [{"leftField": "stock_code", "rightField": "stock_code", "operator": "="}],
+            "joinConditions": [
+                {"leftField": "stock_code", "rightField": "stock_code", "operator": "="},
+                {"leftField": "report_date", "rightField": "report_date", "operator": "="},
+            ],
         })
     print("  Relations created (BS-IS, BS-CF)")
 
