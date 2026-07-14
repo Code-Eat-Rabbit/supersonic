@@ -1,53 +1,73 @@
 # SuperSonic 全面测评方案设计
 
-> 状态: 待审查 (v2 — 已根据 review 修正) | 日期: 2026-07-14
+> 状态: 待审查 (v3 — R2 修正) | 日期: 2026-07-14
 > 参考: FinVerBench (Panda, 2026) 的财务报表数据结构与受控对比思想
 
 ## 1. 目标
 
-为面试准备一份可量化、可复现的 SuperSonic Text2SQL 性能报告，覆盖两个核心维度 + 一个可选维度。
+为面试准备一份可量化、可复现的 SuperSonic Text2SQL 性能报告，回答三个核心面试问题：
+1. 哪个 LLM 模型在 SuperSonic 上表现最好？（模型选型）
+2. Agent / Dataset 的最佳规模是多少？（工程最佳实践）
+3. SuperSonic 语义层的衍生建模到底值多少钱？（核心卖点量化）
 
-## 2. 测评框架（优先级排序）
+## 2. SuperSonic 语义模型层级（基础共识）
+
+本文后续所有设计的术语均基于以下代码核查结果：
 
 ```
-优先级: 维度三(治理对比) > 维度一(模型对比) > 维度二(数据量,可选)
-
-┌──────────┬─────────────────────┬─────────────────┬──────────────────┐
-│ 维度      │ 3. 治理方案对比 ★    │ 1. 模型对比      │ 2. 数据量测试     │
-│ 优先级    │ 高 (SuperSonic独有)  │ 中 (baseline)   │ 低 (可选)         │
-├──────────┼─────────────────────┼─────────────────┼──────────────────┤
-│ 变量      │ 三级数据治理         │ 3个LLM模型       │ 数据集规模        │
-│ 固定      │ akShare财务数据      │ DuSQL 100条      │ 单模型+Level 2   │
-│ 数据源    │ akShare A股          │ 内置DuSQL        │ akShare A股       │
-├──────────┼─────────────────────┼─────────────────┼──────────────────┤
-│ 核心指标  │ 映射率/SQL准确率/gold│ 准确率/延迟/token │ 元数据层+查询层    │
-│ 叙事价值  │ "为什么语义层有价值"  │ "模型选型依据"    │ "系统容量天花板"  │
-└──────────┴─────────────────────┴─────────────────┴──────────────────┘
+Domain 主题域  (可嵌套)
+├── Model 模型  (有 domainId, 无 dataSetId)
+│   └── ModelDetail 内联定义:
+│       ├── identifiers (主键/外键)
+│       ├── dimensions  (维度, 创建时拆入 s2_dimension 表)
+│       ├── measures    (原始物理字段+聚合, 创建时拆入 s2_metric 表)
+│       └── fields      (物理列)
+│
+├── Dataset 数据集 (有 domainId, 无 modelId)
+│   └── dataSetModelConfigs: 按 Model 分组引用已存在的维度/指标 ID
+│
+└── Agent (dataSetIds: Set<Long>)
+    └── 只绑定 Dataset, 用户提问时 LLM 看到所绑 Dataset 的 schema
 ```
 
-### Gold 标注方案（维度二/三共用）
+**四个关键关系**:
+- Model 与 Dataset 是**平级兄弟**，都挂在 Domain 下，互不引用
+- 维度/指标**归属 Model**（有 modelId），Dataset 只引用
+- 一个 Model 可被多个 Dataset 引用（Dataset 是"逻辑视图"）
+- Dataset 可聚合多个 Model，系统用 Model 关系自动处理 JOIN
 
-维度二/三使用 akShare 新数据集，无现成 gold SQL。标注方案：
-- 规模: 30-50 条人工标注的 (NL问题, gold SQL, gold结果集) 三元组
-- 流程: 1 人编写 + 1 人交叉验证，记录 disagreement
-- 降级方案: 若标注人力不足，降级为"人工评判查询结果正确性"（适合治理对比，重点不是 SQL 文本精确匹配而是"答对没"）
-- 存储: `evaluation/data/akshare/gold_queries.json` + `evaluation/data/akshare/*.db`
+**两类指标（治理实验的关键变量）**:
+- 基础指标: `净利润 = SUM(net_profit)` ← 对应物理字段
+- 衍生指标: `净利率 = 净利润 / 营业收入` ← 表达式，不对应物理字段
 
-## 3. 维度一：模型对比（优先级: 中）
+## 3. 测评框架
 
-### 3.1 模型选择
+```
+优先级: 子实验 B B(threshold) > D'(衍生指标) > A(Model数) > 维度一(模型对比) > C(分治策略)
+
+┌──────────┬──────────────────────┬─────────────────────┬──────────────────┐
+│ 维度      │ 规模最佳实践 ★        │ 模型对比 (baseline)  │ 衍生指标价值 ★     │
+│ 叙事      │ "Agent/Dataset 上限"  │ "模型选型"           │ "语义层值多少钱"   │
+│ 数据源    │ akShare A股           │ DuSQL (内置)         │ akShare A股        │
+│ 优先      │ 子实验 B 最高ROI      │ baseline             │ 子实验 D'最高ROI   │
+└──────────┴──────────────────────┴─────────────────────┴──────────────────┘
+```
+
+## 4. 维度一：模型对比（优先级: baseline）
+
+### 4.1 模型选择
 
 三个模型统一走 DashScope compatible-mode API (`https://dashscope.aliyuncs.com/compatible-mode/v1`)：
 
-| 模型 | DashScope name | provider | reasoning | 备注 |
-|------|---------------|----------|-----------|------|
-| Qwen3.7-Plus | `qwen3.7-plus` | OPEN_AI | 无 | 通义原生 |
-| DeepSeek V4 Flash | `deepseek-v4-flash` | OPEN_AI | reasoning_content 总是存在 | content 有值，token 开销大 |
-| GLM-5.2 | `glm-5.2` | OPEN_AI | 重度 reasoning | content 有值但需大 token 预算 |
+| 模型 | DashScope name | reasoning 特征 |
+|------|---------------|----------------|
+| Qwen3.7-Plus | `qwen3.7-plus` | 无 |
+| DeepSeek V4 Flash | `deepseek-v4-flash` | reasoning_content 总是存在 |
+| GLM-5.2 | `glm-5.2` | 重度 reasoning |
 
-**重要限定**: 本对比是**端到端服务能力对比**，包含 reasoning 开销，而非纯模型推理能力对比。DeepSeek/GLM 的额外 reasoning 成本是其固有特征的一部分。
+**重要限定**: 本对比是**端到端服务能力对比**，包含 reasoning 开销。
 
-### 3.2 配置参数
+### 4.2 配置
 
 ```yaml
 provider: OPEN_AI
@@ -57,189 +77,160 @@ timeOut: 60
 apiKey: ${DASHSCOPE_API_KEY}  # 运行时注入，AES/ECB 加密后写入 DB
 ```
 
-### 3.3 Agent 方案：3 个独立 Agent（非热切换）
+### 4.3 语义模型与 Agent
 
-**不采用热切换 `chatModelId` 方案**（缓存污染风险、并发污染风险）。
+- DuSQL 语义模型 (Domain/Model/Dataset) **只创建一次**，三模型共享同一套
+- 创建 **3 个独立 Agent**，各自绑定 DuSQL 同一个 Dataset，仅 `chatAppConfig.chatModelId` 不同
+- `build_models.py` 现有幂等逻辑保证重复运行不创建重复实体
 
-改为创建 3 个独立 Agent，各自绑定一个模型：
-- `agent_qwen` → chatModelId = qwen3.7-plus 的 model ID
-- `agent_deepseek` → chatModelId = deepseek-v4-flash 的 model ID
-- `agent_glm` → chatModelId = glm-5.2 的 model ID
+### 4.4 评估数据集
 
-串行执行：Agent A 跑完 100 条 → Agent B 跑 100 条 → Agent C 跑 100 条。避免状态污染，代价仅多 2 个 Agent 数据库记录。
+SuperSonic 内置 DuSQL 评测集：100 条 NL→SQL 查询，4 张表，4 级难度。
 
-### 3.4 评估数据集
+### 4.5 指标（分层 + 多次运行）
 
-使用 SuperSonic 内置 DuSQL 评测集：
-- 100 条中文自然语言 → SQL 查询
-- 4 张表：company, brand, company_brand_revenue, company_revenue
-- 4 级难度：easy / medium / hard / extra
+| 指标 | 说明 |
+|------|------|
+| status 分布 | ok / parse_fail / timeout / exception |
+| 端到端可用率 | count(status=ok) / total |
+| 纯模型准确率 | 仅在 status=ok 子集上计算 Execution Accuracy |
+| Execution Accuracy | 3 次 mean±std，按难度 + ALL |
+| 延迟 | avg/min/max/p95 (ms), 3 次 |
+| Token | prompt/completion/reasoning(分列), 通过 traceId 关联服务端日志获取 (M8) |
+| Wilson 95% CI | 所有准确率附 n |
 
-### 3.5 指标（修正：分层准确率 + 多次运行）
+## 5. Agent / Dataset 规模最佳实践
 
-**每条查询跑 3 次**，报告准确率的 mean ± std。
+### 5.1 SuperSonic 的分治机制（代码核查）
 
-**分层准确率**: 为每条查询记录 `status` 字段：
+**机制 1: Dataset 路由 (winner-takes-all)**
 
-| status | 含义 | 计入"纯模型准确率"？ |
-|--------|------|-------------------|
-| ok | 正常返回可执行 SQL | ✅ |
-| parse_fail | 解析失败，返回 default SQL | ❌ |
-| timeout | 超时无响应 | ❌ |
-| exception | 异常（NPE/500等） | ❌ |
+`HeuristicDataSetResolver.java:27-37` — Agent 即使关联 N 个 Dataset，映射阶段只选**相似度最高**的一个进入 LLM。选择优先级：① dataset 总相似度 → ② metric 相似度 → ③ 总和 → ④ metric 使用次数。
 
-最终报告：
-- **端到端可用率**: `count(status==ok) / total`
-- **纯模型准确率**: 仅在 `status==ok` 子集上计算 Execution Accuracy
-- **综合准确率**: 所有查询（含失败）的准确率
+**机制 2: Schema 字段过滤**
 
-| 指标类别 | 具体指标 | 汇总方式 |
-|---------|---------|---------|
-| 可用率 | status 分布 (ok/parse_fail/timeout/exception) | 按模型 |
-| 准确率 | Execution Accuracy (纯模型 + 综合，按难度) | 3次 mean±std |
-| 准确率 | Exact Match | 3次 mean±std |
-| 延迟 | avg / min / max / p95 (ms) | 3次跑的平均 |
-| Token | prompt / completion / reasoning(分列) / total | 100条合计 |
-| 置信区间 | Wilson 95% CI (每 cell 标注 n) | 所有准确率数字 |
+`LLMRequestService.java:34-47` — `PARSER_FIELDS_COUNT_THRESHOLD` 控制给 LLM 喂全量 schema 还是仅命中元素。默认 0（全量）。
 
-### 3.6 脚本改动
+**无硬限制**: Agent.dataSetIds 数量、Dataset 内 Model 数、Dataset 聚合指标数 — 三者均无 MAX 校验。实际瓶颈是 **prompt token 上限**和**映射检索质量**。
 
-现有文件修改：
-- `build_models.py`: 扩展现有 `create_chat_model()` → 循环创建 3 个模型 + 3 个 Agent；每个 Agent 绑定各自 chatModelId
-- `build_pred_result.py`: 查询函数增加 `status` 字段记录 + `latency_ms` + `token_usage`；`get_pred_sql()` 失败时标记 status 而非静默 fallback
-- `evaluation.py`: 新增 `evaluate_multi_model()` 入口 + 分层准确率计算 + `benchmark_report.json` 输出 + Wilson CI
+### 5.2 四个正交子实验
 
-新增文件：
-- `evaluation/benchmark.sh`: 一键启动脚本
+#### 子实验 A — Dataset 内 Model 数量
 
-## 4. 维度三：数据治理方案对比（优先级: 高）
+- **变量**: 一个 Dataset 的 `dataSetModelConfigs` 含 1 / 5 / 10 / 20 个 Model
+- **固定**: 同一 Agent, 单一 Dataset, 全量 schema (threshold=0), 同一份 gold 查询集
+- **观察**: 准确率拐点、prompt token 增长、LLM 延迟、context window 是否撞顶
+- **假设**: 准确率随 schema 膨胀下降，数据量增长对 LLM 延迟的影响**主要通过 schema 膨胀间接传导**（PromptHelper 把全部 metrics/dimensions 拼入 prompt，prompt token 随 Model 数量近似线性增长）；额外记录 prompt token 作为 schema 膨胀代理变量与延迟做相关性分析
 
-### 4.1 核心洞察
+#### 子实验 B — `PARSER_FIELDS_COUNT_THRESHOLD` 调参 ★（最高 ROI）
 
-SuperSonic 与 FinVerBench 的关键区别：SuperSonic 在数据和 SQL 之间有一层语义建模。测试不同治理层级可以量化这层语义建模的价值。
+- **变量**: threshold ∈ {0(全量), 5, 10, 20}
+- **固定**: 大 Dataset (20 个 Model), 同一份 gold 查询集
+- **观察**: threshold 对准确率、延迟、token 的影响 — 找甜点区
+- **叙事价值**: SuperSonic 文档未讲清的调参点，实测数据很有说服力
+- **⚠️ 前置验证**: 实施前先实测 `threshold=0` 的真实分支行为
 
-### 4.2 三级治理定义
+#### 子实验 C — Agent 跨 Dataset 分治策略
 
-```
-Level 0 — 裸数据
-  ├── 列名: akShare 原始英文编码
-  ├── 维度类型: 未标注
-  ├── Metric: 无定义
-  └── 值: 原始编码值
+- **变量**:
+  - 方案 1: 1 个大 Agent 关联 10 个 Dataset（靠 winner-takes-all）
+  - 方案 2: 10 个小 Agent 各关联 1 个 Dataset（手工分治）
+  - 方案 3: 3 个中 Agent 各关联 3-4 个 Dataset（按业务域分组）
+- **观察**: 路由准确率、端到端准确率、运维复杂度
+- **目标**: 给出"何时自动路由 / 何时必须手工拆分"的判据
 
-Level 1 — 基础治理
-  ├── 列名: 中文别名映射 (DES文件)
-  ├── 维度类型: categorical / time / primary
-  ├── Metric: SUM/COUNT 基础聚合
-  └── 值: 原始编码值
+#### 子实验 D' — 衍生指标的价值 ★（最干净治理实验）
 
-Level 2 — 完整治理 (参考 CSMAR 管线经验)
-  ├── 列名: 中文视图 (v_xxx)
-  ├── 维度类型: 全标注
-  ├── Metric: 全定义
-  ├── 值映射: 解码视图
-  ├── 值级 Embedding: BGE-small-zh 手动生成
-  ├── 单字词补充: 高频分词子词
-  └── EmbeddedMapper: use-llm-enhance 启用
-```
+利用基础指标 vs 衍生指标的区别，做**真正的单变量**治理实验：
 
-### 4.3 定性假设（待实测验证）
+- **变量**: Dataset 是否包含衍生指标
+  - 对照组: 只引用基础指标 (`净利润 = SUM(net_profit)`)
+  - 实验组: 额外引用衍生指标 (`净利率 = 净利润 / 营业收入`)
+- **固定**: 同一物理 Model, 同一份 gold 查询集
+- **测试集**: 含"比率/衍生"语义的查询（如"各公司净利率排名"）
+  - 对照组: LLM 需要自己拼表达式
+  - 实验组: 直接用衍生指标
+- **叙事价值**: 直接量化"语义层衍生建模值多少钱"，SuperSonic 区别于纯 Text2SQL 的核心卖点
+
+### 5.3 数据源（akShare A 股）
 
 ```
-定性假设 (非精确预测):
-1. 映射成功率: Level 0 → 1 → 2 单调递增
-2. Level 2 在多表 JOIN 查询上显著优于 Level 0/1
-3. Level 0 的"可回答查询覆盖比例"极低（列名编码 + 无维度标注）
-4. Level 1 → Level 2 的增益主要体现在"值匹配"类查询
-5. 治理 ROI: Level 0→1 的边际收益 > Level 1→2（前者解决"能不能答"，后者优化"答得准不准"）
-```
-
-### 4.4 测试方法
-
-同一份 akShare 数据，对三个 Level 分别注册独立的 Domain/Dataset/Model/Agent，跑相同 30-50 条 gold 查询集，对比：
-
-| 指标层 | 指标 |
-|--------|------|
-| 映射层 | `query/search` API 成功率、映射到的实体数量 |
-| SQL 层 | Execution Accuracy (vs. gold SQL)、SQL 语法正确率 |
-| 结果层 | 查询结果与 gold 结果集比对 |
-| 效率层 | 平均延迟、Token 消耗 |
-
-## 5. 维度二：数据量 / 容量测试（优先级: 低，可选）
-
-### 5.1 参考 FinVerBench 的报表结构
-
-对标 FinVerBench 使用三大财务报表的结构，使用 akShare A 股财务数据。
-
-### 5.2 数据源
-
-```
-akShare A股财务数据集:
 1. 资产负债表: ak.stock_balance_sheet_by_report_em()
 2. 利润表: ak.stock_profit_sheet_by_report_em()
 3. 现金流量表: ak.stock_cash_flow_sheet_by_report_em()
 4. 股本结构: ak.stock_individual_info_em()
 ```
 
-### 5.3 测试递进
+**表设计**: 按公司分表（每公司 3 张表），制造 schema 膨胀场景，测试 SuperSonic 在多表场景下的表现。
 
-```
-第1轮 — 5家公司 × 3报表 = 15张表 → 验证脚本正确性
-第2轮 — 20家公司 × 3报表 = 60张表 → 观察性能拐点
-第3轮 — 50-100家公司           → 饱和测试 (如果时间允许)
-```
+### 5.4 Gold 标注方案
 
-### 5.4 指标拆分为两层（修正）
+- **Gold 四元组**: `(NL 问题, 目标 Dataset ID, 目标结果集, 参考 SQL)`
+- 准确率评判**主用结果集比对**（`eval_exec_match`）
+- 参考 SQL 用完整治理写法（最易读）
+- 规模: 30-50 条人工标注，1 人编写 + 1 人交叉验证
+- `目标 Dataset ID` — 子实验 C 必需（评判路由是否选对）
 
-**元数据层**:
+### 5.5 指标体系
 
-| 指标 | 测量方法 | 假设 |
-|------|---------|------|
-| 建模耗时 | `createModel` API 响应时间 | 随数据量线性增长 |
-| Schema 加载时间 | `getModelList` API 延迟 | 与 model 数量相关 |
-| 元数据 API 延迟 | domain/dataset/dimension list API | Mark |
+| 指标层 | 指标 | 适用子实验 |
+|--------|------|-----------|
+| 路由层 | Dataset 选择正确率 (winner==gold) | A / C |
+| 路由层 | 纯映射端点 `/api/semantic/query/chat/map` 命中元素分布 | 全部 |
+| Prompt 层 | prompt_tokens（通过 traceId 关联服务端日志） | A / B |
+| 准确率层 | Execution Accuracy（结果集比对） | 全部 |
+| 延迟层 | 映射延迟 / LLM 延迟 / 端到端延迟 | 全部 |
+| 容量层 | context window 命中率 / 截断率 | A |
 
-**查询层**:
+> **M5 修正**: 映射成功率改用 `/api/semantic/query/chat/map` 端点（纯 SchemaMapper 链，不跑 LLM）。删掉"200 OK 比例"指标 — SuperSonic 全局异常处理器把所有异常包成 HTTP 200，此指标无信息量。
 
-| 指标 | 测量方法 | 假设 |
-|------|---------|------|
-| 映射成功率 | `query/search` API 200 OK 比例 | Schema 膨胀 → 下降 |
-| 映射延迟 | embedding 检索 vs LLM 生成分段计时 | 前者线性，后者稳定 |
-| SQL 生成延迟 | Query API P50/P95/P99 | 由 LLM 主导，与数据量几乎无关 |
-| 失败临界点 | OOM / NPE / timeout 出现位置 | 取决于缓存/分页策略 |
+> **M8 修正**: token 使用追踪 — SuperSonic 服务端无 `tokenUsage` 暴露。方案: 在 LLM 调用点把 `response.tokenUsage()` 写入 traceId 关联日志，benchmark 脚本通过 traceId 拉日志解析。降级方案: 维度二/三弱化 token 指标，只报延迟。
 
-明确假设: "数据量增长对 LLM 生成延迟无显著影响，对映射成功率有负向影响"。
+### 5.6 映射延迟拆分（B6 修正）
+
+`use-llm-enhance` 在 `s2-config.yaml` 中默认 `true`（不是 false）。这意味着每次 embedding 检索会额外调一次 LLM 做二次过滤。延迟需拆三段：
+
+- 纯 embedding 检索延迟 (`use-llm-enhance=false` 时测)
+- LLM 二次过滤延迟 (`use-llm-enhance=true` 时的增量)
+- NL2SQL 生成延迟
+
+各实验组需显式声明 `use-llm-enhance` 取值。Level 0/1 对照组需明确设为 `false`。
+
+### 5.7 实施优先级
+
+1. **子实验 B** (threshold 调参) — 最高 ROI，叙事最强，代码改动最小
+2. **子实验 D'** (衍生指标) — 最干净单变量实验，量化语义层价值
+3. **子实验 A** (Model 数) — 验证容量拐点
+4. **维度一** (模型对比) — baseline
+5. **子实验 C** (分治策略) — 时间允许再做
 
 ## 6. 项目产出
 
-| 产出 | 路径 | 用途 |
-|------|------|------|
-| 测评报告 | `evaluation/output/<timestamp>/benchmark_report.json` | 结构化数据 |
-| 模型对比 | `evaluation/output/<timestamp>/model_comparison.md` | 面试展示 |
-| 容量分析 | `evaluation/output/<timestamp>/capacity_test.md` | 上限分析 |
-| 治理对比 | `evaluation/output/<timestamp>/governance_comparison.md` | ROI 分析 |
-| 一键脚本 | `evaluation/benchmark.sh` | 可复现 |
+| 产出 | 路径 |
+|------|------|
+| 测评报告 | `evaluation/output/<timestamp>/benchmark_report.json` |
+| 模型对比 | `evaluation/output/<timestamp>/model_comparison.md` |
+| 规模最佳实践 | `evaluation/output/<timestamp>/scale_best_practices.md` |
+| 一键脚本 | `evaluation/benchmark.sh` |
 
 ## 7. 已知风险与缓解
 
 | 风险 | 缓解 |
 |------|------|
-| API key 泄露 | 已在本版规格中使用占位符 `<DASHSCOPE_API_KEY>`；旧 commit 中的真实 key 需在 DashScope 控制台 revoke |
-| deepseek-v4-flash / glm-5.2 reasoning 吃掉 token 预算 | max_tokens=4096 + timeout=60s |
-| glm-5.2 content 截断 | 同上 |
+| 泄露的 API key | 在 DashScope 控制台手动 revoke；规格用 `${DASHSCOPE_API_KEY}` 占位符 |
+| deepseek/glm reasoning 吃掉 token 预算 | max_tokens=4096 + timeout=60s |
 | akShare 限流 + 字段变动 | rate limit + 固定 snapshot 日期 + 字段存在性校验 |
-| H2 内存模式重启丢失数据 | 切换到 Docker PostgreSQL 持久化 |
-| 模型静默升级 (DashScope) | 每次跑完记录模型返回的 version 字段 |
 | SuperSonic 版本 drift | 记录 git commit hash |
-| DashScope QPS 限流 | 串行执行 + sleep(3) 间隔 |
-| 多个 Level 的 API 编排脚本复杂度 | 复用 CSMAR 管线脚本模板 |
-| 小样本统计效力不足 | 所有准确率附 n 和 Wilson 95% CI |
+| 模型静默升级 (DashScope) | 记录 `response.model` 版本字段 |
+| schema 膨胀导致 prompt 超 context window | Dataset 拆分 / schema 裁剪 (子实验 B) / 换大窗口模型 |
+| per-model 创建耗时被 HTTP round-trip 主导 | 拆 per-model 分布(P50/P95) + 总计 |
+| `PARSER_FIELDS_COUNT_THRESHOLD=0` 行为未验证 | 实施前先实测确认分支逻辑 |
 
 ## 8. 可复现性 Checklist
 
-- [ ] git commit hash 记录: `git rev-parse HEAD`
+- [ ] git commit hash 记录
 - [ ] Python venv 锁定: `pip freeze > evaluation/requirements-freeze.txt`
-- [ ] DashScope 模型版本: 每条查询记录 `response.model`
-- [ ] SuperSonic 配置快照: 保存 `s2_chat_model` 表的模型配置
-- [ ] akShare 数据 snapshot 日期: 记录数据拉取日期
+- [ ] DashScope 模型版本记录
+- [ ] SuperSonic 配置快照
+- [ ] akShare 数据 snapshot 日期
 - [ ] 所有环境变量通过 shell script 显式设置，无隐式依赖
