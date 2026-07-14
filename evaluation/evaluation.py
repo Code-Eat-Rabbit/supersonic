@@ -23,6 +23,7 @@ from __future__ import print_function
 
 import sqlparse
 import logging
+import math
 import os, sys
 import json
 import sqlite3
@@ -30,9 +31,11 @@ import traceback
 import argparse
 import yaml
 import re
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 from process_sql import tokenize, get_schema, get_tables_with_alias, Schema, get_sql
-from build_pred_result import read_query,get_pred_result
+from build_pred_result import read_query
 from build_tables import build_table
 
 # Flag to disable value evaluation
@@ -928,11 +931,207 @@ def remove_unused_file():
         os.remove(pred_file)
         print("pred_file removed!")
 
+
+def wilson_ci(success, total, z=1.96):
+    """Wilson score confidence interval for a proportion."""
+    if total == 0:
+        return (0.0, 0.0)
+    p = success / total
+    denominator = 1 + z**2 / total
+    center = (p + z**2 / (2 * total)) / denominator
+    margin = z * math.sqrt(
+        (p * (1 - p) + z**2 / (4 * total)) / total
+    ) / denominator
+    return (max(0, center - margin), min(1, center + margin))
+
+
+def eval_exec_match_simple(db_path, pred_sql, gold_sql):
+    """Simple execution match: pred result set == gold result set."""
+    try:
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute(pred_sql)
+        p_res = cursor.fetchall()
+        cursor.execute(gold_sql)
+        g_res = cursor.fetchall()
+        conn.close()
+        return p_res == g_res
+    except:
+        return False
+
+
+def evaluate_multi_model(raw_results_path):
+    """Load raw_results.json, compute per-model accuracy, output benchmark_report.json."""
+    with open(raw_results_path) as f:
+        all_results = json.load(f)
+
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    gold_path = current_directory + "/data/gold_example_dusql.txt"
+
+    with open(gold_path) as f:
+        gold_lines = [l.strip().split("\t") for l in f.readlines() if l.strip()]
+
+    db_dir = current_directory + "/data"
+    table_path = current_directory + "/data/tables_dusql.json"
+    kmaps = build_foreign_key_map_from_json(table_path)
+
+    levels = ["easy", "medium", "hard", "extra", "all"]
+    report = {"models": {}, "summary_table": {}}
+
+    for model_key, model_runs in all_results.items():
+        model_report = {"runs": []}
+
+        for run_idx, run_results in enumerate(model_runs):
+            run_metrics = {
+                "status_counts": {"ok": 0, "parse_fail": 0, "timeout": 0, "exception": 0},
+                "level_accuracy": {},
+                "latency": [],
+                "est_completion_tokens": [],
+            }
+
+            for r in run_results:
+                st = r.get("status", "exception")
+                run_metrics["status_counts"][st] = run_metrics["status_counts"].get(st, 0) + 1
+                run_metrics["latency"].append(r.get("latency_ms", 0))
+                run_metrics["est_completion_tokens"].append(r.get("est_completion_tokens", 0))
+
+            # Init level accuracy counters
+            for level in levels:
+                run_metrics["level_accuracy"][level] = {"n": 0, "correct": 0}
+
+            # Evaluate each OK query
+            for r in run_results:
+                if r.get("status") != "ok":
+                    continue
+                idx = r["query_idx"]
+                if idx >= len(gold_lines):
+                    continue
+                g_str, db_name = gold_lines[idx]
+                db_path = os.path.join(db_dir, db_name + ".db")
+
+                try:
+                    schema = Schema(get_schema(db_path))
+                    g_sql = get_sql(schema, g_str)
+                    hardness = Evaluator().eval_hardness(g_sql)
+                except:
+                    hardness = "all"
+
+                run_metrics["level_accuracy"][hardness]["n"] += 1
+                run_metrics["level_accuracy"]["all"]["n"] += 1
+
+                if eval_exec_match_simple(db_path, r["pred_sql"], g_str):
+                    run_metrics["level_accuracy"][hardness]["correct"] += 1
+                    run_metrics["level_accuracy"]["all"]["correct"] += 1
+
+            model_report["runs"].append(run_metrics)
+
+        # Aggregate
+        agg = {}
+        for level in levels:
+            ns = [m["level_accuracy"][level]["n"] for m in model_report["runs"]]
+            corrects = [m["level_accuracy"][level]["correct"] for m in model_report["runs"]]
+            if sum(ns) == 0:
+                agg[level] = {"mean_acc": 0.0, "std_acc": 0.0, "n": 0, "ci_low": 0.0, "ci_high": 0.0}
+            else:
+                accs = [c / n if n > 0 else 0 for c, n in zip(corrects, ns)]
+                mean_acc = sum(accs) / len(accs)
+                std_acc = (
+                    (sum((a - mean_acc) ** 2 for a in accs) / len(accs)) ** 0.5
+                    if len(accs) > 1 else 0
+                )
+                ci_low, ci_high = wilson_ci(sum(corrects), sum(ns))
+                agg[level] = {
+                    "mean_acc": round(mean_acc, 4),
+                    "std_acc": round(std_acc, 4),
+                    "n": sum(ns),
+                    "ci_low": round(ci_low, 4),
+                    "ci_high": round(ci_high, 4),
+                }
+
+        # Latency stats
+        all_lat = []
+        all_tok = []
+        for m in model_report["runs"]:
+            all_lat.extend(m["latency"])
+            all_tok.extend(m["est_completion_tokens"])
+        all_lat.sort()
+        n_lat = len(all_lat)
+
+        status_ok = sum(m["status_counts"]["ok"] for m in model_report["runs"])
+        status_total = sum(sum(m["status_counts"].values()) for m in model_report["runs"])
+
+        model_report["aggregate"] = {
+            "availability": round(status_ok / status_total, 4) if status_total else 0,
+            "latency_avg_ms": round(sum(all_lat) / n_lat, 1) if n_lat else 0,
+            "latency_p50_ms": all_lat[n_lat // 2] if n_lat else 0,
+            "latency_p95_ms": all_lat[int(n_lat * 0.95)] if n_lat > 1 else (all_lat[0] if n_lat else 0),
+            "total_est_completion_tokens": sum(all_tok),
+            "avg_est_completion_tokens": round(sum(all_tok) / len(all_tok), 1) if all_tok else 0,
+            "accuracy_by_level": agg,
+        }
+        report["models"][model_key] = model_report
+
+    # Build summary table
+    for level in levels:
+        row = {}
+        for mk in report["models"]:
+            acc = report["models"][mk]["aggregate"]["accuracy_by_level"][level]
+            row[mk] = f"{acc['mean_acc']:.3f} +/- {acc['std_acc']:.3f} (n={acc['n']})"
+        report["summary_table"][level] = row
+
+    out_dir = os.path.dirname(raw_results_path)
+    report_path = out_dir + "/benchmark_report.json"
+    with open(report_path, "w") as f:
+        json.dump(report, f, indent=2, ensure_ascii=False)
+
+    # Print summary
+    print("\n" + "=" * 100)
+    print("MODEL COMPARISON — Execution Accuracy")
+    print("=" * 100)
+    header = f"{'':<12}" + "".join(f"{mk:<35}" for mk in report["models"])
+    print(header)
+    print("-" * 100)
+    for level in levels:
+        line = f"{level:<12}"
+        for mk in report["models"]:
+            line += f"{report['summary_table'][level][mk]:<35}"
+        print(line)
+
+    print("\n" + "=" * 100)
+    print("AVAILABILITY, LATENCY & TOKENS")
+    print("=" * 100)
+    for mk in report["models"]:
+        agg = report["models"][mk]["aggregate"]
+        print(
+            f"{mk}: 可用率={agg['availability']:.1%}  "
+            f"延迟 avg={agg['latency_avg_ms']:.0f}ms p50={agg['latency_p50_ms']:.0f}ms "
+            f"p95={agg['latency_p95_ms']:.0f}ms  "
+            f"token估算={agg['total_est_completion_tokens']}"
+        )
+
+    return report
+
+
 if __name__ == "__main__":
-    build_table()
-    time_cost=get_pred_result()
-    get_evaluation_result(time_cost)
-    remove_unused_file()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--multi":
+        # Multi-model evaluation mode
+        raw_path = sys.argv[2] if len(sys.argv) > 2 else None
+        if not raw_path:
+            # Find latest raw_results.json
+            out_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "output")
+            dirs = sorted([d for d in os.listdir(out_root) if os.path.isdir(os.path.join(out_root, d))])
+            if dirs:
+                raw_path = os.path.join(out_root, dirs[-1], "raw_results.json")
+            else:
+                print("ERROR: No output directory found. Run build_pred_result.py first.")
+                sys.exit(1)
+        evaluate_multi_model(raw_path)
+    else:
+        build_table()
+        time_cost = get_pred_result()
+        get_evaluation_result(time_cost)
+        remove_unused_file()
 
 
 
