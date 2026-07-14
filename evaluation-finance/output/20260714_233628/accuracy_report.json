@@ -1,0 +1,122 @@
+{
+  "qwen3.7-plus": {
+    "availability": "84/84",
+    "by_difficulty": {
+      "e": {
+        "total": 20,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "m": {
+        "total": 30,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "h": {
+        "total": 22,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "x": {
+        "total": 12,
+        "correct": 0,
+        "acc": 0.0
+      }
+    },
+    "by_category": {
+      "AS": {
+        "total": 25,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "CL": {
+        "total": 12,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "YoY": {
+        "total": 23,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "MG": {
+        "total": 24,
+        "correct": 0,
+        "acc": 0.0
+      }
+    },
+    "by_derived": {
+      "with": {
+        "total": 50,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "without": {
+        "total": 34,
+        "correct": 0,
+        "acc": 0.0
+      }
+    },
+    "errors": []
+  },
+  "deepseek-v4-pro": {
+    "availability": "84/84",
+    "by_difficulty": {
+      "e": {
+        "total": 20,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "m": {
+        "total": 30,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "h": {
+        "total": 22,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "x": {
+        "total": 12,
+        "correct": 0,
+        "acc": 0.0
+      }
+    },
+    "by_category": {
+      "AS": {
+        "total": 25,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "CL": {
+        "total": 12,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "YoY": {
+        "total": 23,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "MG": {
+        "total": 24,
+        "correct": 0,
+        "acc": 0.0
+      }
+    },
+    "by_derived": {
+      "with": {
+        "total": 50,
+        "correct": 0,
+        "acc": 0.0
+      },
+      "without": {
+        "total": 34,
+        "correct": 0,
+        "acc": 0.0
+      }
+    },
+    "errors": []
+  }
+}
