@@ -1,0 +1,59 @@
+[
+  {
+    "query_text": "2025年净利润最高的5家公司",
+    "gold_sql": "SELECT stock_name, net_profit FROM income_stmt WHERE report_date = '2025-12-31' ORDER BY net_profit DESC LIMIT 5",
+    "difficulty": "easy",
+    "category": "AS",
+    "has_derived_in_gold": false,
+    "tables_needed": [
+      "income_stmt"
+    ],
+    "notes": "单表聚合与排序，考察基础SELECT和LIMIT"
+  },
+  {
+    "query_text": "2025年ROA最高的10家公司",
+    "gold_sql": "SELECT i.stock_name, i.net_profit / b.total_assets AS ROA FROM income_stmt i JOIN balance_sheet b ON i.stock_code = b.stock_code AND i.report_date = b.report_date WHERE i.report_date = '2025-12-31' ORDER BY ROA DESC LIMIT 10",
+    "difficulty": "hard",
+    "category": "AS",
+    "has_derived_in_gold": true,
+    "tables_needed": [
+      "balance_sheet",
+      "income_stmt"
+    ],
+    "notes": "两表JOIN计算衍生指标ROA，考察跨表计算与衍生指标表达式"
+  },
+  {
+    "query_text": "2025年经营现金流为正且净利润超过100亿的公司",
+    "gold_sql": "SELECT c.stock_name, c.operating_cf, i.net_profit FROM cash_flow c JOIN income_stmt i ON c.stock_code = i.stock_code AND c.report_date = i.report_date WHERE c.report_date = '2025-12-31' AND c.operating_cf > 0 AND i.net_profit > 10000000000",
+    "difficulty": "medium",
+    "category": "CL",
+    "has_derived_in_gold": false,
+    "tables_needed": [
+      "cash_flow",
+      "income_stmt"
+    ],
+    "notes": "两表JOIN与多条件过滤，理解现金流量表与利润表的关联"
+  },
+  {
+    "query_text": "营收连续3年增长超过10%的公司",
+    "gold_sql": "SELECT stock_name FROM income_stmt WHERE report_date IN ('2023-12-31','2024-12-31','2025-12-31') GROUP BY stock_code HAVING MAX(CASE WHEN report_date='2024-12-31' THEN revenue END) > MAX(CASE WHEN report_date='2023-12-31' THEN revenue END)*1.1 AND MAX(CASE WHEN report_date='2025-12-31' THEN revenue END) > MAX(CASE WHEN report_date='2024-12-31' THEN revenue END)*1.1",
+    "difficulty": "hard",
+    "category": "YoY",
+    "has_derived_in_gold": false,
+    "tables_needed": [
+      "income_stmt"
+    ],
+    "notes": "同比多期比较，使用条件聚合实现连续三年增长筛选"
+  },
+  {
+    "query_text": "2025年净利润处于前25%分位数的公司",
+    "gold_sql": "WITH t AS (SELECT stock_name, net_profit, NTILE(4) OVER (ORDER BY net_profit DESC) AS quartile FROM income_stmt WHERE report_date = '2025-12-31') SELECT stock_name, net_profit FROM t WHERE quartile = 1",
+    "difficulty": "extra",
+    "category": "MG",
+    "has_derived_in_gold": false,
+    "tables_needed": [
+      "income_stmt"
+    ],
+    "notes": "窗口函数NTILE计算分位数，考察分位数统计与量级筛选"
+  }
+]

@@ -1,7 +1,7 @@
 [
   {
     "query_text": "贵州茅台在2023年末的ROE是多少？",
-    "gold_sql": "SELECT i.net_profit * 1.0 / b.total_equity AS roe FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.stock_code='600519' AND b.report_date='2023-12-31'",
+    "gold_sql": "SELECT i.net_profit * 1.0 / b.total_equity AS roe FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.stock_code='600519' AND b.report_date LIKE '2023-12-31%'",
     "difficulty": "e",
     "category": "AS",
     "has_derived": true,
@@ -9,7 +9,7 @@
   },
   {
     "query_text": "平安银行2023年末的资产负债率是多少？",
-    "gold_sql": "SELECT b.total_liabilities * 1.0 / b.total_assets AS debt_ratio FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.stock_code='000001' AND b.report_date='2023-12-31'",
+    "gold_sql": "SELECT b.total_liabilities * 1.0 / b.total_assets AS debt_ratio FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.stock_code='000001' AND b.report_date LIKE '2023-12-31%'",
     "difficulty": "e",
     "category": "AS",
     "has_derived": true,
@@ -17,7 +17,7 @@
   },
   {
     "query_text": "2023年末所有公司的平均总资产是多少？",
-    "gold_sql": "SELECT AVG(b.total_assets) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31'",
+    "gold_sql": "SELECT AVG(b.total_assets) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%'",
     "difficulty": "e",
     "category": "AS",
     "has_derived": false,
@@ -25,7 +25,7 @@
   },
   {
     "query_text": "2023年末总资产超过1万亿的公司有多少家？",
-    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31' AND b.total_assets > 1000000000000",
+    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%' AND b.total_assets > 1000000000000",
     "difficulty": "e",
     "category": "AS",
     "has_derived": false,
@@ -33,7 +33,7 @@
   },
   {
     "query_text": "2023年末净利润最高的公司净利润是多少？",
-    "gold_sql": "SELECT MAX(i.net_profit) FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date WHERE i.report_date='2023-12-31'",
+    "gold_sql": "SELECT MAX(i.net_profit) FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date WHERE i.report_date LIKE '2023-12-31%'",
     "difficulty": "e",
     "category": "AS",
     "has_derived": false,
@@ -41,7 +41,7 @@
   },
   {
     "query_text": "2023年末所有公司的毛利润（营业收入减营业成本）最大值是多少？",
-    "gold_sql": "SELECT MAX(i.revenue - i.operating_cost) AS max_gross_profit FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date WHERE i.report_date='2023-12-31'",
+    "gold_sql": "SELECT MAX(i.revenue - i.operating_cost) AS max_gross_profit FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date WHERE i.report_date LIKE '2023-12-31%'",
     "difficulty": "e",
     "category": "AS",
     "has_derived": true,
@@ -49,7 +49,7 @@
   },
   {
     "query_text": "2023年末所有公司的平均ROE是多少？",
-    "gold_sql": "SELECT AVG(i.net_profit * 1.0 / b.total_equity) AS avg_roe FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31'",
+    "gold_sql": "SELECT AVG(i.net_profit * 1.0 / b.total_equity) AS avg_roe FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%'",
     "difficulty": "m",
     "category": "AS",
     "has_derived": true,
@@ -57,7 +57,7 @@
   },
   {
     "query_text": "2023年末资产负债率低于50%的公司有多少家？",
-    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31' AND b.total_liabilities * 1.0 / b.total_assets < 0.5",
+    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%' AND b.total_liabilities * 1.0 / b.total_assets < 0.5",
     "difficulty": "m",
     "category": "AS",
     "has_derived": true,
@@ -65,7 +65,7 @@
   },
   {
     "query_text": "2023年末总资产最高的10家公司的平均毛利率是多少？",
-    "gold_sql": "SELECT AVG((i.revenue - i.operating_cost) * 1.0 / i.revenue) AS avg_gross_margin FROM (SELECT b.stock_code, b.report_date FROM balance_sheet b WHERE b.report_date='2023-12-31' ORDER BY b.total_assets DESC LIMIT 10) top10 JOIN income_stmt i ON top10.stock_code=i.stock_code AND top10.report_date=i.report_date",
+    "gold_sql": "SELECT AVG((i.revenue - i.operating_cost) * 1.0 / i.revenue) AS avg_gross_margin FROM (SELECT b.stock_code, b.report_date FROM balance_sheet b WHERE b.report_date LIKE '2023-12-31%' ORDER BY b.total_assets DESC LIMIT 10) top10 JOIN income_stmt i ON top10.stock_code=i.stock_code AND top10.report_date=i.report_date",
     "difficulty": "m",
     "category": "AS",
     "has_derived": true,
@@ -73,7 +73,7 @@
   },
   {
     "query_text": "2023年末净利润超过100亿的公司有多少家，它们的平均营业成本是多少？",
-    "gold_sql": "SELECT COUNT(*) AS company_count, AVG(i.operating_cost) AS avg_operating_cost FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date WHERE i.report_date='2023-12-31' AND i.net_profit > 10000000000",
+    "gold_sql": "SELECT COUNT(*) AS company_count, AVG(i.operating_cost) AS avg_operating_cost FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date WHERE i.report_date LIKE '2023-12-31%' AND i.net_profit > 10000000000",
     "difficulty": "m",
     "category": "AS",
     "has_derived": false,
@@ -81,7 +81,7 @@
   },
   {
     "query_text": "2023年末所有公司的净资产（总资产-总负债）总和是多少？",
-    "gold_sql": "SELECT SUM(b.total_assets - b.total_liabilities) AS total_equity_sum FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31'",
+    "gold_sql": "SELECT SUM(b.total_assets - b.total_liabilities) AS total_equity_sum FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%'",
     "difficulty": "m",
     "category": "AS",
     "has_derived": true,
@@ -89,7 +89,7 @@
   },
   {
     "query_text": "2023年末所有公司的经营现金流与净利润比值的平均值是多少？",
-    "gold_sql": "SELECT AVG(c.operating_cf * 1.0 / i.net_profit) AS avg_cf_ratio FROM cash_flow c JOIN income_stmt i ON c.stock_code=i.stock_code AND c.report_date=i.report_date WHERE c.report_date='2023-12-31'",
+    "gold_sql": "SELECT AVG(c.operating_cf * 1.0 / i.net_profit) AS avg_cf_ratio FROM cash_flow c JOIN income_stmt i ON c.stock_code=i.stock_code AND c.report_date=i.report_date WHERE c.report_date LIKE '2023-12-31%'",
     "difficulty": "m",
     "category": "AS",
     "has_derived": true,
@@ -97,7 +97,7 @@
   },
   {
     "query_text": "2023年末总资产超过5000亿但净利润为负的公司有多少家？",
-    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31' AND b.total_assets > 500000000000 AND i.net_profit < 0",
+    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%' AND b.total_assets > 500000000000 AND i.net_profit < 0",
     "difficulty": "m",
     "category": "AS",
     "has_derived": false,
@@ -105,7 +105,7 @@
   },
   {
     "query_text": "2023年末毛利率最高的公司是哪家，毛利率是多少？",
-    "gold_sql": "SELECT i.stock_name, (i.revenue - i.operating_cost) * 1.0 / i.revenue AS gross_margin FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date WHERE i.report_date='2023-12-31' ORDER BY gross_margin DESC LIMIT 1",
+    "gold_sql": "SELECT i.stock_name, (i.revenue - i.operating_cost) * 1.0 / i.revenue AS gross_margin FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date WHERE i.report_date LIKE '2023-12-31%' ORDER BY gross_margin DESC LIMIT 1",
     "difficulty": "h",
     "category": "AS",
     "has_derived": true,
@@ -113,7 +113,7 @@
   },
   {
     "query_text": "2023年末ROE高于平均水平的公司有多少家？",
-    "gold_sql": "SELECT COUNT(*) FROM (SELECT i.net_profit * 1.0 / b.total_equity AS roe FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31') t WHERE t.roe > (SELECT AVG(i2.net_profit * 1.0 / b2.total_equity) FROM balance_sheet b2 JOIN income_stmt i2 ON b2.stock_code=i2.stock_code AND b2.report_date=i2.report_date WHERE b2.report_date='2023-12-31')",
+    "gold_sql": "SELECT COUNT(*) FROM (SELECT i.net_profit * 1.0 / b.total_equity AS roe FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%') t WHERE t.roe > (SELECT AVG(i2.net_profit * 1.0 / b2.total_equity) FROM balance_sheet b2 JOIN income_stmt i2 ON b2.stock_code=i2.stock_code AND b2.report_date=i2.report_date WHERE b2.report_date LIKE '2023-12-31%')",
     "difficulty": "h",
     "category": "AS",
     "has_derived": true,
@@ -121,7 +121,7 @@
   },
   {
     "query_text": "2023年末总资产最高的5家公司的平均ROA是多少？",
-    "gold_sql": "SELECT AVG(i.net_profit * 1.0 / b.total_assets) AS avg_roa FROM (SELECT stock_code, report_date FROM balance_sheet WHERE report_date='2023-12-31' ORDER BY total_assets DESC LIMIT 5) top5 JOIN balance_sheet b ON top5.stock_code=b.stock_code AND top5.report_date=b.report_date JOIN income_stmt i ON top5.stock_code=i.stock_code AND top5.report_date=i.report_date",
+    "gold_sql": "SELECT AVG(i.net_profit * 1.0 / b.total_assets) AS avg_roa FROM (SELECT stock_code, report_date FROM balance_sheet WHERE report_date LIKE '2023-12-31%' ORDER BY total_assets DESC LIMIT 5) top5 JOIN balance_sheet b ON top5.stock_code=b.stock_code AND top5.report_date=b.report_date JOIN income_stmt i ON top5.stock_code=i.stock_code AND top5.report_date=i.report_date",
     "difficulty": "h",
     "category": "AS",
     "has_derived": true,
@@ -129,7 +129,7 @@
   },
   {
     "query_text": "2023年末营运资本（流动资产-流动负债）超过1000亿的公司有多少家？",
-    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31' AND (b.current_assets - b.current_liabilities) > 100000000000",
+    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%' AND (b.current_assets - b.current_liabilities) > 100000000000",
     "difficulty": "h",
     "category": "AS",
     "has_derived": true,
@@ -137,7 +137,7 @@
   },
   {
     "query_text": "从2022年到2023年，净利润增长率超过10%的公司有多少家？",
-    "gold_sql": "SELECT COUNT(*) FROM income_stmt i2022 JOIN income_stmt i2023 ON i2022.stock_code=i2023.stock_code AND i2022.report_date='2022-12-31' AND i2023.report_date='2023-12-31' WHERE (i2023.net_profit - i2022.net_profit) * 1.0 / i2022.net_profit > 0.1",
+    "gold_sql": "SELECT COUNT(*) FROM income_stmt i2022 JOIN income_stmt i2023 ON i2022.stock_code=i2023.stock_code AND i2022.report_date LIKE '2022-12-31%' AND i2023.report_date LIKE '2023-12-31%' WHERE (i2023.net_profit - i2022.net_profit) * 1.0 / i2022.net_profit > 0.1",
     "difficulty": "h",
     "category": "AS",
     "has_derived": true,
@@ -145,7 +145,7 @@
   },
   {
     "query_text": "2023年末资产负债率在40%-60%之间且ROE大于15%的公司有多少家？",
-    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31' AND b.total_liabilities * 1.0 / b.total_assets BETWEEN 0.4 AND 0.6 AND i.net_profit * 1.0 / b.total_equity > 0.15",
+    "gold_sql": "SELECT COUNT(DISTINCT b.stock_code) FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%' AND b.total_liabilities * 1.0 / b.total_assets BETWEEN 0.4 AND 0.6 AND i.net_profit * 1.0 / b.total_equity > 0.15",
     "difficulty": "h",
     "category": "AS",
     "has_derived": true,
@@ -153,7 +153,7 @@
   },
   {
     "query_text": "2023年末经营现金流和净利润都为正的公司中，毛利率最高的是哪家？",
-    "gold_sql": "SELECT i.stock_name, (i.revenue - i.operating_cost) * 1.0 / i.revenue AS gross_margin FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date JOIN cash_flow c ON i.stock_code=c.stock_code AND i.report_date=c.report_date WHERE i.report_date='2023-12-31' AND c.operating_cf > 0 AND i.net_profit > 0 ORDER BY gross_margin DESC LIMIT 1",
+    "gold_sql": "SELECT i.stock_name, (i.revenue - i.operating_cost) * 1.0 / i.revenue AS gross_margin FROM income_stmt i JOIN balance_sheet b ON i.stock_code=b.stock_code AND i.report_date=b.report_date JOIN cash_flow c ON i.stock_code=c.stock_code AND i.report_date=c.report_date WHERE i.report_date LIKE '2023-12-31%' AND c.operating_cf > 0 AND i.net_profit > 0 ORDER BY gross_margin DESC LIMIT 1",
     "difficulty": "h",
     "category": "AS",
     "has_derived": true,
@@ -161,7 +161,7 @@
   },
   {
     "query_text": "2023年末所有公司的平均ROE、平均ROA、平均资产负债率、平均毛利率分别是多少？",
-    "gold_sql": "SELECT AVG(i.net_profit * 1.0 / b.total_equity) AS avg_roe, AVG(i.net_profit * 1.0 / b.total_assets) AS avg_roa, AVG(b.total_liabilities * 1.0 / b.total_assets) AS avg_debt_ratio, AVG((i.revenue - i.operating_cost) * 1.0 / i.revenue) AS avg_gross_margin FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31'",
+    "gold_sql": "SELECT AVG(i.net_profit * 1.0 / b.total_equity) AS avg_roe, AVG(i.net_profit * 1.0 / b.total_assets) AS avg_roa, AVG(b.total_liabilities * 1.0 / b.total_assets) AS avg_debt_ratio, AVG((i.revenue - i.operating_cost) * 1.0 / i.revenue) AS avg_gross_margin FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%'",
     "difficulty": "x",
     "category": "AS",
     "has_derived": true,
@@ -169,7 +169,7 @@
   },
   {
     "query_text": "2023年末总资产最高的公司，它的ROE、ROA、资产负债率、毛利率是多少？",
-    "gold_sql": "SELECT i.net_profit * 1.0 / b.total_equity AS roe, i.net_profit * 1.0 / b.total_assets AS roa, b.total_liabilities * 1.0 / b.total_assets AS debt_ratio, (i.revenue - i.operating_cost) * 1.0 / i.revenue AS gross_margin FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31' ORDER BY b.total_assets DESC LIMIT 1",
+    "gold_sql": "SELECT i.net_profit * 1.0 / b.total_equity AS roe, i.net_profit * 1.0 / b.total_assets AS roa, b.total_liabilities * 1.0 / b.total_assets AS debt_ratio, (i.revenue - i.operating_cost) * 1.0 / i.revenue AS gross_margin FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%' ORDER BY b.total_assets DESC LIMIT 1",
     "difficulty": "x",
     "category": "AS",
     "has_derived": true,
@@ -177,7 +177,7 @@
   },
   {
     "query_text": "2023年末资产负债率低于平均水平的公司，它们的平均ROE和平均毛利率是多少？",
-    "gold_sql": "SELECT AVG(i.net_profit * 1.0 / b.total_equity) AS avg_roe, AVG((i.revenue - i.operating_cost) * 1.0 / i.revenue) AS avg_gross_margin FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31' AND b.total_liabilities * 1.0 / b.total_assets < (SELECT AVG(b2.total_liabilities * 1.0 / b2.total_assets) FROM balance_sheet b2 WHERE b2.report_date='2023-12-31')",
+    "gold_sql": "SELECT AVG(i.net_profit * 1.0 / b.total_equity) AS avg_roe, AVG((i.revenue - i.operating_cost) * 1.0 / i.revenue) AS avg_gross_margin FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%' AND b.total_liabilities * 1.0 / b.total_assets < (SELECT AVG(b2.total_liabilities * 1.0 / b2.total_assets) FROM balance_sheet b2 WHERE b2.report_date LIKE '2023-12-31%')",
     "difficulty": "x",
     "category": "AS",
     "has_derived": true,
@@ -185,7 +185,7 @@
   },
   {
     "query_text": "2023年末经营现金流与净利润比值大于0.5且净利率大于0.5的公司有多少家？",
-    "gold_sql": "SELECT COUNT(DISTINCT i.stock_code) FROM income_stmt i JOIN cash_flow c ON i.stock_code=c.stock_code AND i.report_date=c.report_date WHERE i.report_date='2023-12-31' AND c.operating_cf * 1.0 / i.net_profit > 0.5 AND i.net_profit * 1.0 / i.revenue > 0.5",
+    "gold_sql": "SELECT COUNT(DISTINCT i.stock_code) FROM income_stmt i JOIN cash_flow c ON i.stock_code=c.stock_code AND i.report_date=c.report_date WHERE i.report_date LIKE '2023-12-31%' AND c.operating_cf * 1.0 / i.net_profit > 0.5 AND i.net_profit * 1.0 / i.revenue > 0.5",
     "difficulty": "x",
     "category": "AS",
     "has_derived": true,
@@ -193,7 +193,7 @@
   },
   {
     "query_text": "2023年末总资产排名前10%的公司的平均ROE是多少？",
-    "gold_sql": "SELECT AVG(roe) FROM (SELECT i.net_profit * 1.0 / b.total_equity AS roe, ROW_NUMBER() OVER (ORDER BY b.total_assets DESC) AS rn, COUNT(*) OVER() AS total FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2023-12-31') WHERE rn <= total * 0.1",
+    "gold_sql": "SELECT AVG(roe) FROM (SELECT i.net_profit * 1.0 / b.total_equity AS roe, ROW_NUMBER() OVER (ORDER BY b.total_assets DESC) AS rn, COUNT(*) OVER() AS total FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2023-12-31%') WHERE rn <= total * 0.1",
     "difficulty": "x",
     "category": "AS",
     "has_derived": true,
@@ -201,7 +201,7 @@
   },
   {
     "query_text": "查询股票代码为'600519.SH'在2023-12-31的营业收入和经营活动现金流净额。",
-    "gold_sql": "SELECT inc.revenue, cf.operating_cf FROM income_stmt inc JOIN cash_flow cf ON inc.stock_code=cf.stock_code AND inc.report_date=cf.report_date WHERE inc.stock_code='600519.SH' AND inc.report_date='2023-12-31'",
+    "gold_sql": "SELECT inc.revenue, cf.operating_cf FROM income_stmt inc JOIN cash_flow cf ON inc.stock_code=cf.stock_code AND inc.report_date=cf.report_date WHERE inc.stock_code='600519.SH' AND inc.report_date LIKE '2023-12-31%'",
     "difficulty": "e",
     "category": "CL",
     "has_derived": false,
@@ -209,7 +209,7 @@
   },
   {
     "query_text": "查询股票代码为'000858.SZ'在2022-12-31的总资产和净利润。",
-    "gold_sql": "SELECT bs.total_assets, inc.net_profit FROM balance_sheet bs JOIN income_stmt inc ON bs.stock_code=inc.stock_code AND bs.report_date=inc.report_date WHERE bs.stock_code='000858.SZ' AND bs.report_date='2022-12-31'",
+    "gold_sql": "SELECT bs.total_assets, inc.net_profit FROM balance_sheet bs JOIN income_stmt inc ON bs.stock_code=inc.stock_code AND bs.report_date=inc.report_date WHERE bs.stock_code='000858.SZ' AND bs.report_date LIKE '2022-12-31%'",
     "difficulty": "e",
     "category": "CL",
     "has_derived": false,
@@ -217,7 +217,7 @@
   },
   {
     "query_text": "查询所有股票在2023-12-31的营业收入和资产负债率，并按资产负债率降序排列，取前10。",
-    "gold_sql": "SELECT inc.stock_code, inc.revenue, bs.total_liabilities/bs.total_assets AS debt_ratio FROM balance_sheet bs JOIN income_stmt inc ON bs.stock_code=inc.stock_code AND bs.report_date=inc.report_date WHERE bs.report_date='2023-12-31' ORDER BY debt_ratio DESC LIMIT 10",
+    "gold_sql": "SELECT inc.stock_code, inc.revenue, bs.total_liabilities/bs.total_assets AS debt_ratio FROM balance_sheet bs JOIN income_stmt inc ON bs.stock_code=inc.stock_code AND bs.report_date=inc.report_date WHERE bs.report_date LIKE '2023-12-31%' ORDER BY debt_ratio DESC LIMIT 10",
     "difficulty": "e",
     "category": "CL",
     "has_derived": true,
@@ -225,7 +225,7 @@
   },
   {
     "query_text": "查询股票代码为'601857.SH'在2023-12-31的净利润和经营活动现金流净额，并计算净利润与经营活动现金流净额的比值。",
-    "gold_sql": "SELECT inc.net_profit, cf.operating_cf, inc.net_profit/cf.operating_cf AS ratio FROM income_stmt inc JOIN cash_flow cf ON inc.stock_code=cf.stock_code AND inc.report_date=cf.report_date WHERE inc.stock_code='601857.SH' AND inc.report_date='2023-12-31'",
+    "gold_sql": "SELECT inc.net_profit, cf.operating_cf, inc.net_profit/cf.operating_cf AS ratio FROM income_stmt inc JOIN cash_flow cf ON inc.stock_code=cf.stock_code AND inc.report_date=cf.report_date WHERE inc.stock_code='601857.SH' AND inc.report_date LIKE '2023-12-31%'",
     "difficulty": "e",
     "category": "CL",
     "has_derived": true,
@@ -233,7 +233,7 @@
   },
   {
     "query_text": "查询2023年年报中，资产负债率低于0.4且净利润大于100亿的股票代码、名称和资产负债率。",
-    "gold_sql": "SELECT bs.stock_code, bs.stock_name, bs.total_liabilities/bs.total_assets AS debt_ratio FROM balance_sheet bs JOIN income_stmt inc ON bs.stock_code=inc.stock_code AND bs.report_date=inc.report_date WHERE bs.report_date='2023-12-31' AND bs.total_liabilities/bs.total_assets < 0.4 AND inc.net_profit > 10000000000",
+    "gold_sql": "SELECT bs.stock_code, bs.stock_name, bs.total_liabilities/bs.total_assets AS debt_ratio FROM balance_sheet bs JOIN income_stmt inc ON bs.stock_code=inc.stock_code AND bs.report_date=inc.report_date WHERE bs.report_date LIKE '2023-12-31%' AND bs.total_liabilities/bs.total_assets < 0.4 AND inc.net_profit > 10000000000",
     "difficulty": "m",
     "category": "CL",
     "has_derived": true,
@@ -241,7 +241,7 @@
   },
   {
     "query_text": "查询2023-12-31的资产负债率大于0.5且毛利率大于0.7的股票代码、名称、资产负债率和毛利率。",
-    "gold_sql": "SELECT bs.stock_code, bs.stock_name, bs.total_liabilities/bs.total_assets AS debt_ratio, (inc.revenue - inc.operating_cost)/inc.revenue AS gross_margin FROM balance_sheet bs JOIN income_stmt inc ON bs.stock_code=inc.stock_code AND bs.report_date=inc.report_date WHERE bs.report_date='2023-12-31' AND bs.total_liabilities/bs.total_assets > 0.5 AND (inc.revenue - inc.operating_cost)/inc.revenue > 0.7",
+    "gold_sql": "SELECT bs.stock_code, bs.stock_name, bs.total_liabilities/bs.total_assets AS debt_ratio, (inc.revenue - inc.operating_cost)/inc.revenue AS gross_margin FROM balance_sheet bs JOIN income_stmt inc ON bs.stock_code=inc.stock_code AND bs.report_date=inc.report_date WHERE bs.report_date LIKE '2023-12-31%' AND bs.total_liabilities/bs.total_assets > 0.5 AND (inc.revenue - inc.operating_cost)/inc.revenue > 0.7",
     "difficulty": "m",
     "category": "CL",
     "has_derived": true,
@@ -249,7 +249,7 @@
   },
   {
     "query_text": "查询2023-12-31的经营活动现金流净额大于净利润的股票，并显示股票代码、名称和差值。",
-    "gold_sql": "SELECT inc.stock_code, inc.stock_name, (cf.operating_cf - inc.net_profit) AS diff FROM income_stmt inc JOIN cash_flow cf ON inc.stock_code=cf.stock_code AND inc.report_date=cf.report_date WHERE inc.report_date='2023-12-31' AND cf.operating_cf > inc.net_profit",
+    "gold_sql": "SELECT inc.stock_code, inc.stock_name, (cf.operating_cf - inc.net_profit) AS diff FROM income_stmt inc JOIN cash_flow cf ON inc.stock_code=cf.stock_code AND inc.report_date=cf.report_date WHERE inc.report_date LIKE '2023-12-31%' AND cf.operating_cf > inc.net_profit",
     "difficulty": "m",
     "category": "CL",
     "has_derived": true,
@@ -257,7 +257,7 @@
   },
   {
     "query_text": "查询2023-12-31的ROE排名前5的股票，显示股票代码、名称和ROE。",
-    "gold_sql": "SELECT inc.stock_code, inc.stock_name, inc.net_profit/bs.total_equity AS roe FROM income_stmt inc JOIN balance_sheet bs ON inc.stock_code=bs.stock_code AND inc.report_date=bs.report_date WHERE inc.report_date='2023-12-31' ORDER BY roe DESC LIMIT 5",
+    "gold_sql": "SELECT inc.stock_code, inc.stock_name, inc.net_profit/bs.total_equity AS roe FROM income_stmt inc JOIN balance_sheet bs ON inc.stock_code=bs.stock_code AND inc.report_date=bs.report_date WHERE inc.report_date LIKE '2023-12-31%' ORDER BY roe DESC LIMIT 5",
     "difficulty": "m",
     "category": "CL",
     "has_derived": true,
@@ -297,7 +297,7 @@
   },
   {
     "query_text": "查询总资产大于5000亿的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM balance_sheet WHERE total_assets > 500000000000 AND report_date='2022-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name FROM balance_sheet WHERE total_assets > 500000000000 AND report_date LIKE '2022-12-31%';",
     "difficulty": "e",
     "category": "MG",
     "has_derived": false,
@@ -305,7 +305,7 @@
   },
   {
     "query_text": "查询净利润大于100亿的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM income_stmt WHERE net_profit > 10000000000 AND report_date='2022-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name FROM income_stmt WHERE net_profit > 10000000000 AND report_date LIKE '2022-12-31%';",
     "difficulty": "e",
     "category": "MG",
     "has_derived": false,
@@ -313,7 +313,7 @@
   },
   {
     "query_text": "查询资产负债率小于30%的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM balance_sheet WHERE total_liabilities/total_assets < 0.3 AND report_date='2022-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name FROM balance_sheet WHERE total_liabilities/total_assets < 0.3 AND report_date LIKE '2022-12-31%';",
     "difficulty": "e",
     "category": "MG",
     "has_derived": true,
@@ -321,7 +321,7 @@
   },
   {
     "query_text": "查询总资产排名前10的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM balance_sheet WHERE report_date='2022-12-31' ORDER BY total_assets DESC LIMIT 10;",
+    "gold_sql": "SELECT stock_code, stock_name FROM balance_sheet WHERE report_date LIKE '2022-12-31%' ORDER BY total_assets DESC LIMIT 10;",
     "difficulty": "e",
     "category": "MG",
     "has_derived": false,
@@ -329,7 +329,7 @@
   },
   {
     "query_text": "查询经营活动现金流净额大于0的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM cash_flow WHERE operating_cf > 0 AND report_date='2022-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name FROM cash_flow WHERE operating_cf > 0 AND report_date LIKE '2022-12-31%';",
     "difficulty": "e",
     "category": "MG",
     "has_derived": false,
@@ -337,7 +337,7 @@
   },
   {
     "query_text": "查询毛利率最高的前5家公司的股票代码、股票名称和毛利率。",
-    "gold_sql": "SELECT i.stock_code, i.stock_name, (i.revenue - i.operating_cost)/i.revenue AS gross_margin FROM income_stmt i WHERE i.report_date='2022-12-31' ORDER BY gross_margin DESC LIMIT 5;",
+    "gold_sql": "SELECT i.stock_code, i.stock_name, (i.revenue - i.operating_cost)/i.revenue AS gross_margin FROM income_stmt i WHERE i.report_date LIKE '2022-12-31%' ORDER BY gross_margin DESC LIMIT 5;",
     "difficulty": "m",
     "category": "MG",
     "has_derived": true,
@@ -345,7 +345,7 @@
   },
   {
     "query_text": "查询ROE大于20%且总资产大于2000亿的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.total_assets > 200000000000 AND i.net_profit/b.total_equity > 0.2 AND b.report_date='2022-12-31';",
+    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.total_assets > 200000000000 AND i.net_profit/b.total_equity > 0.2 AND b.report_date LIKE '2022-12-31%';",
     "difficulty": "m",
     "category": "MG",
     "has_derived": true,
@@ -353,7 +353,7 @@
   },
   {
     "query_text": "查询经营活动现金流净额大于净利润的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT c.stock_code, c.stock_name FROM cash_flow c JOIN income_stmt i ON c.stock_code=i.stock_code AND c.report_date=i.report_date WHERE c.operating_cf > i.net_profit AND c.report_date='2022-12-31';",
+    "gold_sql": "SELECT c.stock_code, c.stock_name FROM cash_flow c JOIN income_stmt i ON c.stock_code=i.stock_code AND c.report_date=i.report_date WHERE c.operating_cf > i.net_profit AND c.report_date LIKE '2022-12-31%';",
     "difficulty": "m",
     "category": "MG",
     "has_derived": false,
@@ -361,7 +361,7 @@
   },
   {
     "query_text": "查询资产周转率（营业收入/总资产）最高的前5家公司的股票代码、股票名称和资产周转率。",
-    "gold_sql": "SELECT b.stock_code, b.stock_name, i.revenue/b.total_assets AS asset_turnover FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2022-12-31' ORDER BY asset_turnover DESC LIMIT 5;",
+    "gold_sql": "SELECT b.stock_code, b.stock_name, i.revenue/b.total_assets AS asset_turnover FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2022-12-31%' ORDER BY asset_turnover DESC LIMIT 5;",
     "difficulty": "m",
     "category": "MG",
     "has_derived": true,
@@ -369,7 +369,7 @@
   },
   {
     "query_text": "查询资产负债率大于70%且净利润大于50亿的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.total_liabilities/b.total_assets > 0.7 AND i.net_profit > 5000000000 AND b.report_date='2022-12-31';",
+    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.total_liabilities/b.total_assets > 0.7 AND i.net_profit > 5000000000 AND b.report_date LIKE '2022-12-31%';",
     "difficulty": "m",
     "category": "MG",
     "has_derived": true,
@@ -377,7 +377,7 @@
   },
   {
     "query_text": "查询负债总额最高的前3家公司的股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM balance_sheet WHERE report_date='2022-12-31' ORDER BY total_liabilities DESC LIMIT 3;",
+    "gold_sql": "SELECT stock_code, stock_name FROM balance_sheet WHERE report_date LIKE '2022-12-31%' ORDER BY total_liabilities DESC LIMIT 3;",
     "difficulty": "m",
     "category": "MG",
     "has_derived": false,
@@ -385,7 +385,7 @@
   },
   {
     "query_text": "将公司按总资产从高到低分成4组，查询第一组（资产最高的25%）的公司股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM (SELECT stock_code, stock_name, NTILE(4) OVER (ORDER BY total_assets DESC) AS quartile FROM balance_sheet WHERE report_date='2022-12-31') WHERE quartile=1;",
+    "gold_sql": "SELECT stock_code, stock_name FROM (SELECT stock_code, stock_name, NTILE(4) OVER (ORDER BY total_assets DESC) AS quartile FROM balance_sheet WHERE report_date LIKE '2022-12-31%') WHERE quartile=1;",
     "difficulty": "m",
     "category": "MG",
     "has_derived": false,
@@ -393,7 +393,7 @@
   },
   {
     "query_text": "查询现金净流量大于0且总资产小于1000亿的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT c.stock_code, c.stock_name FROM cash_flow c JOIN balance_sheet b ON c.stock_code=b.stock_code AND c.report_date=b.report_date WHERE c.net_cf > 0 AND b.total_assets < 100000000000 AND c.report_date='2022-12-31';",
+    "gold_sql": "SELECT c.stock_code, c.stock_name FROM cash_flow c JOIN balance_sheet b ON c.stock_code=b.stock_code AND c.report_date=b.report_date WHERE c.net_cf > 0 AND b.total_assets < 100000000000 AND c.report_date LIKE '2022-12-31%';",
     "difficulty": "m",
     "category": "MG",
     "has_derived": false,
@@ -401,7 +401,7 @@
   },
   {
     "query_text": "查询ROE排名前10的公司，要求ROE>15%且资产负债率<60%，显示股票代码、股票名称和ROE。",
-    "gold_sql": "SELECT b.stock_code, b.stock_name, i.net_profit/b.total_equity AS roe FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE i.net_profit/b.total_equity > 0.15 AND b.total_liabilities/b.total_assets < 0.6 AND b.report_date='2022-12-31' ORDER BY roe DESC LIMIT 10;",
+    "gold_sql": "SELECT b.stock_code, b.stock_name, i.net_profit/b.total_equity AS roe FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE i.net_profit/b.total_equity > 0.15 AND b.total_liabilities/b.total_assets < 0.6 AND b.report_date LIKE '2022-12-31%' ORDER BY roe DESC LIMIT 10;",
     "difficulty": "h",
     "category": "MG",
     "has_derived": true,
@@ -409,7 +409,7 @@
   },
   {
     "query_text": "将公司按净利润分成5档，查询处于第5档（最高20%）的公司，只显示前5条记录。",
-    "gold_sql": "SELECT stock_code, stock_name, net_profit FROM (SELECT stock_code, stock_name, net_profit, NTILE(5) OVER (ORDER BY net_profit DESC) AS quintile FROM income_stmt WHERE report_date='2022-12-31') WHERE quintile=5 LIMIT 5;",
+    "gold_sql": "SELECT stock_code, stock_name, net_profit FROM (SELECT stock_code, stock_name, net_profit, NTILE(5) OVER (ORDER BY net_profit DESC) AS quintile FROM income_stmt WHERE report_date LIKE '2022-12-31%') WHERE quintile=5 LIMIT 5;",
     "difficulty": "h",
     "category": "MG",
     "has_derived": false,
@@ -417,7 +417,7 @@
   },
   {
     "query_text": "查询毛利率大于50%且资产负债率小于40%的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE (i.revenue - i.operating_cost)/i.revenue > 0.5 AND b.total_liabilities/b.total_assets < 0.4 AND b.report_date='2022-12-31';",
+    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE (i.revenue - i.operating_cost)/i.revenue > 0.5 AND b.total_liabilities/b.total_assets < 0.4 AND b.report_date LIKE '2022-12-31%';",
     "difficulty": "h",
     "category": "MG",
     "has_derived": true,
@@ -425,7 +425,7 @@
   },
   {
     "query_text": "查询经营活动现金流净额与净利润之比（经营现金流/净利润）最大的前5家公司的股票代码、股票名称和比值。",
-    "gold_sql": "SELECT c.stock_code, c.stock_name, c.operating_cf/i.net_profit AS cash_to_profit FROM cash_flow c JOIN income_stmt i ON c.stock_code=i.stock_code AND c.report_date=i.report_date WHERE i.net_profit != 0 AND c.report_date='2022-12-31' ORDER BY cash_to_profit DESC LIMIT 5;",
+    "gold_sql": "SELECT c.stock_code, c.stock_name, c.operating_cf/i.net_profit AS cash_to_profit FROM cash_flow c JOIN income_stmt i ON c.stock_code=i.stock_code AND c.report_date=i.report_date WHERE i.net_profit != 0 AND c.report_date LIKE '2022-12-31%' ORDER BY cash_to_profit DESC LIMIT 5;",
     "difficulty": "h",
     "category": "MG",
     "has_derived": true,
@@ -433,7 +433,7 @@
   },
   {
     "query_text": "将公司按ROA（净利润/总资产）分成3组，查询中间组（第二组）的公司股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM (SELECT b.stock_code, b.stock_name, NTILE(3) OVER (ORDER BY i.net_profit/b.total_assets) AS tercile FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2022-12-31') WHERE tercile=2;",
+    "gold_sql": "SELECT stock_code, stock_name FROM (SELECT b.stock_code, b.stock_name, NTILE(3) OVER (ORDER BY i.net_profit/b.total_assets) AS tercile FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2022-12-31%') WHERE tercile=2;",
     "difficulty": "h",
     "category": "MG",
     "has_derived": true,
@@ -441,7 +441,7 @@
   },
   {
     "query_text": "查询总资产大于5000亿但净利润小于100亿的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.total_assets > 500000000000 AND i.net_profit < 10000000000 AND b.report_date='2022-12-31';",
+    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.total_assets > 500000000000 AND i.net_profit < 10000000000 AND b.report_date LIKE '2022-12-31%';",
     "difficulty": "h",
     "category": "MG",
     "has_derived": false,
@@ -449,7 +449,7 @@
   },
   {
     "query_text": "查询股票代码以'600'开头（上海主板）且资产负债率最高的前5家公司的股票代码、股票名称和资产负债率。",
-    "gold_sql": "SELECT b.stock_code, b.stock_name, b.total_liabilities/b.total_assets AS debt_ratio FROM balance_sheet b WHERE b.stock_code LIKE '600%' AND b.report_date='2022-12-31' ORDER BY debt_ratio DESC LIMIT 5;",
+    "gold_sql": "SELECT b.stock_code, b.stock_name, b.total_liabilities/b.total_assets AS debt_ratio FROM balance_sheet b WHERE b.stock_code LIKE '600%' AND b.report_date LIKE '2022-12-31%' ORDER BY debt_ratio DESC LIMIT 5;",
     "difficulty": "h",
     "category": "MG",
     "has_derived": true,
@@ -457,7 +457,7 @@
   },
   {
     "query_text": "将公司按净利率（净利润/营业收入）分成4组，查询净利率最高的组中毛利率也大于30%的公司股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM (SELECT stock_code, stock_name, net_profit/revenue AS profit_margin, (revenue-operating_cost)/revenue AS gross_margin, NTILE(4) OVER (ORDER BY net_profit/revenue DESC) AS quartile FROM income_stmt WHERE report_date='2022-12-31') WHERE quartile=1 AND gross_margin > 0.3;",
+    "gold_sql": "SELECT stock_code, stock_name FROM (SELECT stock_code, stock_name, net_profit/revenue AS profit_margin, (revenue-operating_cost)/revenue AS gross_margin, NTILE(4) OVER (ORDER BY net_profit/revenue DESC) AS quartile FROM income_stmt WHERE report_date LIKE '2022-12-31%') WHERE quartile=1 AND gross_margin > 0.3;",
     "difficulty": "x",
     "category": "MG",
     "has_derived": true,
@@ -465,7 +465,7 @@
   },
   {
     "query_text": "查询经营活动现金流净额大于0且投资活动现金流净额小于-100亿的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT stock_code, stock_name FROM cash_flow WHERE operating_cf > 0 AND investing_cf < -10000000000 AND report_date='2022-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name FROM cash_flow WHERE operating_cf > 0 AND investing_cf < -10000000000 AND report_date LIKE '2022-12-31%';",
     "difficulty": "x",
     "category": "MG",
     "has_derived": false,
@@ -473,7 +473,7 @@
   },
   {
     "query_text": "将公司按总资产分成5档，并在每一档内按净利润降序排列，取每档净利润最高的1家公司。显示股票代码、股票名称、总资产和净利润。",
-    "gold_sql": "SELECT stock_code, stock_name, total_assets, net_profit FROM (SELECT stock_code, stock_name, total_assets, net_profit, tile, ROW_NUMBER() OVER (PARTITION BY tile ORDER BY net_profit DESC) AS rn FROM (SELECT b.stock_code, b.stock_name, b.total_assets, i.net_profit, NTILE(5) OVER (ORDER BY b.total_assets DESC) AS tile FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date='2022-12-31') ) WHERE rn=1;",
+    "gold_sql": "SELECT stock_code, stock_name, total_assets, net_profit FROM (SELECT stock_code, stock_name, total_assets, net_profit, tile, ROW_NUMBER() OVER (PARTITION BY tile ORDER BY net_profit DESC) AS rn FROM (SELECT b.stock_code, b.stock_name, b.total_assets, i.net_profit, NTILE(5) OVER (ORDER BY b.total_assets DESC) AS tile FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date WHERE b.report_date LIKE '2022-12-31%') ) WHERE rn=1;",
     "difficulty": "x",
     "category": "MG",
     "has_derived": false,
@@ -481,7 +481,7 @@
   },
   {
     "query_text": "查询(净利润-经营活动现金流净额)的绝对值大于100亿，且资产负债率大于50%的公司的股票代码和股票名称。",
-    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date JOIN cash_flow c ON b.stock_code=c.stock_code AND b.report_date=c.report_date WHERE ABS(i.net_profit - c.operating_cf) > 10000000000 AND b.total_liabilities/b.total_assets > 0.5 AND b.report_date='2022-12-31';",
+    "gold_sql": "SELECT b.stock_code, b.stock_name FROM balance_sheet b JOIN income_stmt i ON b.stock_code=i.stock_code AND b.report_date=i.report_date JOIN cash_flow c ON b.stock_code=c.stock_code AND b.report_date=c.report_date WHERE ABS(i.net_profit - c.operating_cf) > 10000000000 AND b.total_liabilities/b.total_assets > 0.5 AND b.report_date LIKE '2022-12-31%';",
     "difficulty": "x",
     "category": "MG",
     "has_derived": true,
@@ -489,7 +489,7 @@
   },
   {
     "query_text": "查询2023年所有股票的净利润及其上年同期净利润。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, net_profit, prev_net_profit FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date = '2023-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, net_profit, prev_net_profit FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%';",
     "difficulty": "e",
     "category": "YoY",
     "has_derived": false,
@@ -497,7 +497,7 @@
   },
   {
     "query_text": "查询2023年所有股票的总资产及其上年同期总资产。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, total_assets, prev_total_assets FROM (SELECT stock_code, stock_name, report_date, total_assets, LAG(total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_total_assets FROM balance_sheet) WHERE report_date = '2023-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, total_assets, prev_total_assets FROM (SELECT stock_code, stock_name, report_date, total_assets, LAG(total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_total_assets FROM balance_sheet) WHERE report_date LIKE '2023-12-31%';",
     "difficulty": "e",
     "category": "YoY",
     "has_derived": false,
@@ -505,7 +505,7 @@
   },
   {
     "query_text": "查询2023年所有股票的经营活动现金流及其上年同期经营活动现金流。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, operating_cf, prev_operating_cf FROM (SELECT stock_code, stock_name, report_date, operating_cf, LAG(operating_cf) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_operating_cf FROM cash_flow) WHERE report_date = '2023-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, operating_cf, prev_operating_cf FROM (SELECT stock_code, stock_name, report_date, operating_cf, LAG(operating_cf) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_operating_cf FROM cash_flow) WHERE report_date LIKE '2023-12-31%';",
     "difficulty": "e",
     "category": "YoY",
     "has_derived": false,
@@ -513,7 +513,7 @@
   },
   {
     "query_text": "查询2023年股票代码为'600519'的营业收入及其上年同期营业收入。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, revenue, prev_revenue FROM (SELECT stock_code, stock_name, report_date, revenue, LAG(revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_revenue FROM income_stmt) WHERE stock_code = '600519' AND report_date = '2023-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, revenue, prev_revenue FROM (SELECT stock_code, stock_name, report_date, revenue, LAG(revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_revenue FROM income_stmt) WHERE stock_code = '600519' AND report_date LIKE '2023-12-31%';",
     "difficulty": "e",
     "category": "YoY",
     "has_derived": false,
@@ -521,7 +521,7 @@
   },
   {
     "query_text": "查询2023年所有股票的资产负债率及其上年同期资产负债率。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, debt_ratio, prev_debt_ratio FROM (SELECT stock_code, stock_name, report_date, total_liabilities/total_assets AS debt_ratio, LAG(total_liabilities/total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_debt_ratio FROM balance_sheet) WHERE report_date = '2023-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, debt_ratio, prev_debt_ratio FROM (SELECT stock_code, stock_name, report_date, total_liabilities/total_assets AS debt_ratio, LAG(total_liabilities/total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_debt_ratio FROM balance_sheet) WHERE report_date LIKE '2023-12-31%';",
     "difficulty": "e",
     "category": "YoY",
     "has_derived": true,
@@ -529,7 +529,7 @@
   },
   {
     "query_text": "查询2023年所有股票的净利润同比增长率。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, (net_profit - prev_net_profit) / prev_net_profit AS yoy_growth FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date = '2023-12-31' AND prev_net_profit IS NOT NULL;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, (net_profit - prev_net_profit) / prev_net_profit AS yoy_growth FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL;",
     "difficulty": "m",
     "category": "YoY",
     "has_derived": false,
@@ -537,7 +537,7 @@
   },
   {
     "query_text": "查询2023年所有股票的资产负债率同比增长率。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, (debt_ratio - prev_debt_ratio) / prev_debt_ratio AS debt_ratio_growth FROM (SELECT stock_code, stock_name, report_date, total_liabilities/total_assets AS debt_ratio, LAG(total_liabilities/total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_debt_ratio FROM balance_sheet) WHERE report_date = '2023-12-31' AND prev_debt_ratio IS NOT NULL;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, (debt_ratio - prev_debt_ratio) / prev_debt_ratio AS debt_ratio_growth FROM (SELECT stock_code, stock_name, report_date, total_liabilities/total_assets AS debt_ratio, LAG(total_liabilities/total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_debt_ratio FROM balance_sheet) WHERE report_date LIKE '2023-12-31%' AND prev_debt_ratio IS NOT NULL;",
     "difficulty": "m",
     "category": "YoY",
     "has_derived": true,
@@ -545,7 +545,7 @@
   },
   {
     "query_text": "查询2023年所有股票的毛利率及其上年同期毛利率。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, gross_margin, prev_gross_margin FROM (SELECT stock_code, stock_name, report_date, (revenue-operating_cost)/revenue AS gross_margin, LAG((revenue-operating_cost)/revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_gross_margin FROM income_stmt) WHERE report_date = '2023-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, gross_margin, prev_gross_margin FROM (SELECT stock_code, stock_name, report_date, (revenue-operating_cost)/revenue AS gross_margin, LAG((revenue-operating_cost)/revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_gross_margin FROM income_stmt) WHERE report_date LIKE '2023-12-31%';",
     "difficulty": "m",
     "category": "YoY",
     "has_derived": true,
@@ -553,7 +553,7 @@
   },
   {
     "query_text": "查询2023年所有股票的ROE及其上年同期ROE。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, roe, prev_roe FROM (SELECT i.stock_code, i.stock_name, i.report_date, i.net_profit / b.total_equity AS roe, LAG(i.net_profit / b.total_equity) OVER (PARTITION BY i.stock_code ORDER BY i.report_date) AS prev_roe FROM income_stmt i JOIN balance_sheet b ON i.stock_code = b.stock_code AND i.report_date = b.report_date) WHERE report_date = '2023-12-31';",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, roe, prev_roe FROM (SELECT i.stock_code, i.stock_name, i.report_date, i.net_profit / b.total_equity AS roe, LAG(i.net_profit / b.total_equity) OVER (PARTITION BY i.stock_code ORDER BY i.report_date) AS prev_roe FROM income_stmt i JOIN balance_sheet b ON i.stock_code = b.stock_code AND i.report_date = b.report_date) WHERE report_date LIKE '2023-12-31%';",
     "difficulty": "m",
     "category": "YoY",
     "has_derived": true,
@@ -561,7 +561,7 @@
   },
   {
     "query_text": "查询2023年总资产排名前10的股票，并显示其上年同期总资产。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, total_assets, prev_total_assets FROM (SELECT stock_code, stock_name, report_date, total_assets, LAG(total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_total_assets FROM balance_sheet) WHERE report_date = '2023-12-31' ORDER BY total_assets DESC LIMIT 10;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, total_assets, prev_total_assets FROM (SELECT stock_code, stock_name, report_date, total_assets, LAG(total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_total_assets FROM balance_sheet) WHERE report_date LIKE '2023-12-31%' ORDER BY total_assets DESC LIMIT 10;",
     "difficulty": "m",
     "category": "YoY",
     "has_derived": false,
@@ -569,7 +569,7 @@
   },
   {
     "query_text": "查询2023年净利润同比增长率超过50%的股票及其增长率。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, (net_profit - prev_net_profit) / prev_net_profit AS yoy_growth FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date = '2023-12-31' AND prev_net_profit IS NOT NULL AND (net_profit - prev_net_profit) / prev_net_profit > 0.5;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, (net_profit - prev_net_profit) / prev_net_profit AS yoy_growth FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL AND (net_profit - prev_net_profit) / prev_net_profit > 0.5;",
     "difficulty": "m",
     "category": "YoY",
     "has_derived": false,
@@ -577,7 +577,7 @@
   },
   {
     "query_text": "查询2023年所有股票的经营活动现金流同比增长率。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, (operating_cf - prev_operating_cf) / prev_operating_cf AS yoy_growth FROM (SELECT stock_code, stock_name, report_date, operating_cf, LAG(operating_cf) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_operating_cf FROM cash_flow) WHERE report_date = '2023-12-31' AND prev_operating_cf IS NOT NULL;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, (operating_cf - prev_operating_cf) / prev_operating_cf AS yoy_growth FROM (SELECT stock_code, stock_name, report_date, operating_cf, LAG(operating_cf) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_operating_cf FROM cash_flow) WHERE report_date LIKE '2023-12-31%' AND prev_operating_cf IS NOT NULL;",
     "difficulty": "m",
     "category": "YoY",
     "has_derived": false,
@@ -585,7 +585,7 @@
   },
   {
     "query_text": "查询2023年所有股票中连续两年（2021-2022-2023）净利润增长的股票，即2023年净利润 > 2022年净利润且2022年净利润 > 2021年净利润。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, net_profit, prev_net_profit, prev2_net_profit FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit, 1) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit, LAG(net_profit, 2) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev2_net_profit FROM income_stmt) WHERE report_date = '2023-12-31' AND prev_net_profit IS NOT NULL AND prev2_net_profit IS NOT NULL AND net_profit > prev_net_profit AND prev_net_profit > prev2_net_profit;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, net_profit, prev_net_profit, prev2_net_profit FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit, 1) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit, LAG(net_profit, 2) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev2_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL AND prev2_net_profit IS NOT NULL AND net_profit > prev_net_profit AND prev_net_profit > prev2_net_profit;",
     "difficulty": "h",
     "category": "YoY",
     "has_derived": false,
@@ -593,7 +593,7 @@
   },
   {
     "query_text": "查询2023年所有股票的ROA同比增长率。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, (roa - prev_roa) / prev_roa AS roa_growth FROM (SELECT i.stock_code, i.stock_name, i.report_date, i.net_profit / b.total_assets AS roa, LAG(i.net_profit / b.total_assets) OVER (PARTITION BY i.stock_code ORDER BY i.report_date) AS prev_roa FROM income_stmt i JOIN balance_sheet b ON i.stock_code = b.stock_code AND i.report_date = b.report_date) WHERE report_date = '2023-12-31' AND prev_roa IS NOT NULL;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, (roa - prev_roa) / prev_roa AS roa_growth FROM (SELECT i.stock_code, i.stock_name, i.report_date, i.net_profit / b.total_assets AS roa, LAG(i.net_profit / b.total_assets) OVER (PARTITION BY i.stock_code ORDER BY i.report_date) AS prev_roa FROM income_stmt i JOIN balance_sheet b ON i.stock_code = b.stock_code AND i.report_date = b.report_date) WHERE report_date LIKE '2023-12-31%' AND prev_roa IS NOT NULL;",
     "difficulty": "h",
     "category": "YoY",
     "has_derived": true,
@@ -601,7 +601,7 @@
   },
   {
     "query_text": "查询2023年毛利率同比增长率最高的前5只股票及其毛利率增长率。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, gross_margin, prev_gross_margin, (gross_margin - prev_gross_margin) / prev_gross_margin AS gm_growth FROM (SELECT stock_code, stock_name, report_date, (revenue-operating_cost)/revenue AS gross_margin, LAG((revenue-operating_cost)/revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_gross_margin FROM income_stmt) WHERE report_date = '2023-12-31' AND prev_gross_margin IS NOT NULL ORDER BY gm_growth DESC LIMIT 5;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, gross_margin, prev_gross_margin, (gross_margin - prev_gross_margin) / prev_gross_margin AS gm_growth FROM (SELECT stock_code, stock_name, report_date, (revenue-operating_cost)/revenue AS gross_margin, LAG((revenue-operating_cost)/revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_gross_margin FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_gross_margin IS NOT NULL ORDER BY gm_growth DESC LIMIT 5;",
     "difficulty": "h",
     "category": "YoY",
     "has_derived": true,
@@ -609,7 +609,7 @@
   },
   {
     "query_text": "查询2023年净利润同比增长率超过20%且资产负债率同比下降的股票。",
-    "gold_sql": "SELECT n.stock_code, n.stock_name, n.report_date, n.net_profit_growth, d.debt_ratio_growth FROM (SELECT stock_code, stock_name, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date='2023-12-31' AND prev_net_profit IS NOT NULL) n JOIN (SELECT stock_code, report_date, (debt_ratio - prev_debt_ratio)/prev_debt_ratio AS debt_ratio_growth FROM (SELECT stock_code, report_date, total_liabilities/total_assets AS debt_ratio, LAG(total_liabilities/total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_debt_ratio FROM balance_sheet) WHERE report_date='2023-12-31' AND prev_debt_ratio IS NOT NULL) d ON n.stock_code=d.stock_code AND n.report_date=d.report_date WHERE n.net_profit_growth > 0.2 AND d.debt_ratio_growth < 0;",
+    "gold_sql": "SELECT n.stock_code, n.stock_name, n.report_date, n.net_profit_growth, d.debt_ratio_growth FROM (SELECT stock_code, stock_name, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL) n JOIN (SELECT stock_code, report_date, (debt_ratio - prev_debt_ratio)/prev_debt_ratio AS debt_ratio_growth FROM (SELECT stock_code, report_date, total_liabilities/total_assets AS debt_ratio, LAG(total_liabilities/total_assets) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_debt_ratio FROM balance_sheet) WHERE report_date LIKE '2023-12-31%' AND prev_debt_ratio IS NOT NULL) d ON n.stock_code=d.stock_code AND n.report_date=d.report_date WHERE n.net_profit_growth > 0.2 AND d.debt_ratio_growth < 0;",
     "difficulty": "h",
     "category": "YoY",
     "has_derived": true,
@@ -617,7 +617,7 @@
   },
   {
     "query_text": "查询2023年所有股票中，营业收入同比增长率与净利润同比增长率之差的绝对值小于10%的股票。",
-    "gold_sql": "SELECT a.stock_code, a.stock_name, a.revenue_growth, b.net_profit_growth FROM (SELECT stock_code, stock_name, report_date, (revenue - prev_revenue)/prev_revenue AS revenue_growth FROM (SELECT stock_code, stock_name, report_date, revenue, LAG(revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_revenue FROM income_stmt) WHERE report_date='2023-12-31' AND prev_revenue IS NOT NULL) a JOIN (SELECT stock_code, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date='2023-12-31' AND prev_net_profit IS NOT NULL) b ON a.stock_code=b.stock_code WHERE ABS(a.revenue_growth - b.net_profit_growth) < 0.1;",
+    "gold_sql": "SELECT a.stock_code, a.stock_name, a.revenue_growth, b.net_profit_growth FROM (SELECT stock_code, stock_name, report_date, (revenue - prev_revenue)/prev_revenue AS revenue_growth FROM (SELECT stock_code, stock_name, report_date, revenue, LAG(revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_revenue FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_revenue IS NOT NULL) a JOIN (SELECT stock_code, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL) b ON a.stock_code=b.stock_code WHERE ABS(a.revenue_growth - b.net_profit_growth) < 0.1;",
     "difficulty": "h",
     "category": "YoY",
     "has_derived": false,
@@ -625,7 +625,7 @@
   },
   {
     "query_text": "查询2023年所有股票中，经营活动现金流同比增长率为正，但净利润同比增长率为负的股票。",
-    "gold_sql": "SELECT c.stock_code, c.stock_name, c.operating_cf_growth, n.net_profit_growth FROM (SELECT stock_code, stock_name, report_date, (operating_cf - prev_operating_cf)/prev_operating_cf AS operating_cf_growth FROM (SELECT stock_code, stock_name, report_date, operating_cf, LAG(operating_cf) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_operating_cf FROM cash_flow) WHERE report_date='2023-12-31' AND prev_operating_cf IS NOT NULL) c JOIN (SELECT stock_code, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date='2023-12-31' AND prev_net_profit IS NOT NULL) n ON c.stock_code=n.stock_code WHERE c.operating_cf_growth > 0 AND n.net_profit_growth < 0;",
+    "gold_sql": "SELECT c.stock_code, c.stock_name, c.operating_cf_growth, n.net_profit_growth FROM (SELECT stock_code, stock_name, report_date, (operating_cf - prev_operating_cf)/prev_operating_cf AS operating_cf_growth FROM (SELECT stock_code, stock_name, report_date, operating_cf, LAG(operating_cf) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_operating_cf FROM cash_flow) WHERE report_date LIKE '2023-12-31%' AND prev_operating_cf IS NOT NULL) c JOIN (SELECT stock_code, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL) n ON c.stock_code=n.stock_code WHERE c.operating_cf_growth > 0 AND n.net_profit_growth < 0;",
     "difficulty": "h",
     "category": "YoY",
     "has_derived": false,
@@ -633,7 +633,7 @@
   },
   {
     "query_text": "查询2023年所有股票的ROE，上年ROE，以及ROE的变化值（ROE差值）。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, roe, prev_roe, roe - prev_roe AS roe_change FROM (SELECT i.stock_code, i.stock_name, i.report_date, i.net_profit / b.total_equity AS roe, LAG(i.net_profit / b.total_equity) OVER (PARTITION BY i.stock_code ORDER BY i.report_date) AS prev_roe FROM income_stmt i JOIN balance_sheet b ON i.stock_code = b.stock_code AND i.report_date = b.report_date) WHERE report_date = '2023-12-31' AND prev_roe IS NOT NULL;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, roe, prev_roe, roe - prev_roe AS roe_change FROM (SELECT i.stock_code, i.stock_name, i.report_date, i.net_profit / b.total_equity AS roe, LAG(i.net_profit / b.total_equity) OVER (PARTITION BY i.stock_code ORDER BY i.report_date) AS prev_roe FROM income_stmt i JOIN balance_sheet b ON i.stock_code = b.stock_code AND i.report_date = b.report_date) WHERE report_date LIKE '2023-12-31%' AND prev_roe IS NOT NULL;",
     "difficulty": "h",
     "category": "YoY",
     "has_derived": true,
@@ -641,7 +641,7 @@
   },
   {
     "query_text": "查询2023年所有股票中，净利润同比增长率超过30%且毛利率也同比为正的股票。",
-    "gold_sql": "SELECT n.stock_code, n.stock_name, n.net_profit_growth, g.gross_margin_growth FROM (SELECT stock_code, stock_name, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date='2023-12-31' AND prev_net_profit IS NOT NULL) n JOIN (SELECT stock_code, report_date, (gross_margin - prev_gross_margin)/prev_gross_margin AS gross_margin_growth FROM (SELECT stock_code, report_date, (revenue-operating_cost)/revenue AS gross_margin, LAG((revenue-operating_cost)/revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_gross_margin FROM income_stmt) WHERE report_date='2023-12-31' AND prev_gross_margin IS NOT NULL) g ON n.stock_code=g.stock_code WHERE n.net_profit_growth > 0.3 AND g.gross_margin_growth > 0;",
+    "gold_sql": "SELECT n.stock_code, n.stock_name, n.net_profit_growth, g.gross_margin_growth FROM (SELECT stock_code, stock_name, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL) n JOIN (SELECT stock_code, report_date, (gross_margin - prev_gross_margin)/prev_gross_margin AS gross_margin_growth FROM (SELECT stock_code, report_date, (revenue-operating_cost)/revenue AS gross_margin, LAG((revenue-operating_cost)/revenue) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_gross_margin FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_gross_margin IS NOT NULL) g ON n.stock_code=g.stock_code WHERE n.net_profit_growth > 0.3 AND g.gross_margin_growth > 0;",
     "difficulty": "h",
     "category": "YoY",
     "has_derived": true,
@@ -649,7 +649,7 @@
   },
   {
     "query_text": "查询2023年所有股票中，连续三年净利润增长（2021-2022-2023）且2023年净利润增长率超过20%的股票。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, net_profit, prev_net_profit, prev2_net_profit, (net_profit - prev_net_profit)/prev_net_profit AS yoy_growth_2023 FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit,1) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit, LAG(net_profit,2) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev2_net_profit FROM income_stmt) WHERE report_date='2023-12-31' AND prev_net_profit IS NOT NULL AND prev2_net_profit IS NOT NULL AND net_profit > prev_net_profit AND prev_net_profit > prev2_net_profit AND (net_profit - prev_net_profit)/prev_net_profit > 0.2;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, net_profit, prev_net_profit, prev2_net_profit, (net_profit - prev_net_profit)/prev_net_profit AS yoy_growth_2023 FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit,1) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit, LAG(net_profit,2) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev2_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL AND prev2_net_profit IS NOT NULL AND net_profit > prev_net_profit AND prev_net_profit > prev2_net_profit AND (net_profit - prev_net_profit)/prev_net_profit > 0.2;",
     "difficulty": "x",
     "category": "YoY",
     "has_derived": false,
@@ -657,7 +657,7 @@
   },
   {
     "query_text": "查询2023年所有股票的净利润三年复合增长率（CAGR），即（2023年净利润/2020年净利润）^(1/3)-1。",
-    "gold_sql": "SELECT stock_code, stock_name, report_date, net_profit, (exp(log(net_profit/prev3_net_profit)/3) - 1) AS cagr FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit, 3) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev3_net_profit FROM income_stmt) WHERE report_date='2023-12-31' AND prev3_net_profit IS NOT NULL AND prev3_net_profit > 0;",
+    "gold_sql": "SELECT stock_code, stock_name, report_date, net_profit, (exp(log(net_profit/prev3_net_profit)/3) - 1) AS cagr FROM (SELECT stock_code, stock_name, report_date, net_profit, LAG(net_profit, 3) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev3_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev3_net_profit IS NOT NULL AND prev3_net_profit > 0;",
     "difficulty": "x",
     "category": "YoY",
     "has_derived": false,
@@ -665,7 +665,7 @@
   },
   {
     "query_text": "查询2023年所有股票中，经营活动现金流同比增长率与净利润同比增长率方向相反（一正一负）且绝对值均超过10%的股票，并显示两者的差值。",
-    "gold_sql": "SELECT c.stock_code, c.stock_name, c.operating_cf_growth, n.net_profit_growth, c.operating_cf_growth - n.net_profit_growth AS diff FROM (SELECT stock_code, stock_name, report_date, (operating_cf - prev_operating_cf)/prev_operating_cf AS operating_cf_growth FROM (SELECT stock_code, stock_name, report_date, operating_cf, LAG(operating_cf) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_operating_cf FROM cash_flow) WHERE report_date='2023-12-31' AND prev_operating_cf IS NOT NULL) c JOIN (SELECT stock_code, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date='2023-12-31' AND prev_net_profit IS NOT NULL) n ON c.stock_code=n.stock_code WHERE (c.operating_cf_growth > 0.1 AND n.net_profit_growth < -0.1) OR (c.operating_cf_growth < -0.1 AND n.net_profit_growth > 0.1);",
+    "gold_sql": "SELECT c.stock_code, c.stock_name, c.operating_cf_growth, n.net_profit_growth, c.operating_cf_growth - n.net_profit_growth AS diff FROM (SELECT stock_code, stock_name, report_date, (operating_cf - prev_operating_cf)/prev_operating_cf AS operating_cf_growth FROM (SELECT stock_code, stock_name, report_date, operating_cf, LAG(operating_cf) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_operating_cf FROM cash_flow) WHERE report_date LIKE '2023-12-31%' AND prev_operating_cf IS NOT NULL) c JOIN (SELECT stock_code, report_date, (net_profit - prev_net_profit)/prev_net_profit AS net_profit_growth FROM (SELECT stock_code, report_date, net_profit, LAG(net_profit) OVER (PARTITION BY stock_code ORDER BY report_date) AS prev_net_profit FROM income_stmt) WHERE report_date LIKE '2023-12-31%' AND prev_net_profit IS NOT NULL) n ON c.stock_code=n.stock_code WHERE (c.operating_cf_growth > 0.1 AND n.net_profit_growth < -0.1) OR (c.operating_cf_growth < -0.1 AND n.net_profit_growth > 0.1);",
     "difficulty": "x",
     "category": "YoY",
     "has_derived": false,
