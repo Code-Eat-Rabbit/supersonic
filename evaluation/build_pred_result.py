@@ -70,28 +70,24 @@ def get_pred_result_multi_model(api_key_encrypted):
     url = config["url"]
     authorization = get_authorization()
 
-    # Try to build domain/models/agents (idempotent), or reuse existing
-    try:
-        agents_info = build(api_key_encrypted)
-    except Exception as e:
-        print(f"Build step failed (may already exist): {e}")
-        # Fallback: query existing agents
-        agents_info = {}
-        import requests as req
-        exp = time.time() + 100000
-        secret = "WIaO9YRRVt+7QtpPvyWsARFngnEcbaKBk783uGFwMrbJBaochsqCH62L4Kijcb0sZCYoSsiKGV/zPml5MnZ3uQ=="
-        token = jwt.encode({"token_user_name": "admin", "exp": exp}, secret, algorithm="HS512")
-        header = {"Authorization": "Bearer " + token, "App-Key": "supersonic"}
-        resp = req.get(url + "/api/chat/agent/getAgentList", headers=header)
-        for agent in resp.json().get("data", []):
-            name = agent.get("name", "")
-            if "qwen" in name.lower():
-                agents_info["qwen3.7-plus"] = {"agent_id": agent["id"], "chat_id": 0}
-            elif "deepseek" in name.lower():
-                agents_info["deepseek-v4-flash"] = {"agent_id": agent["id"], "chat_id": 0}
-            elif "glm" in name.lower():
-                agents_info["glm-5.2"] = {"agent_id": agent["id"], "chat_id": 0}
-    print(f"Using agents: {json.dumps(agents_info, indent=2)}")
+    # Use existing agents (created in previous run) — skip build entirely
+    import jwt as jwt_lib
+    exp = time.time() + 100000
+    secret = "WIaO9YRRVt+7QtpPvyWsARFngnEcbaKBk783uGFwMrbJBaochsqCH62L4Kijcb0sZCYoSsiKGV/zPml5MnZ3uQ=="
+    token = jwt_lib.encode({"token_user_name": "admin", "exp": exp}, secret, algorithm="HS512")
+    header2 = {"Authorization": "Bearer " + token, "App-Key": "supersonic"}
+    import requests as req
+    resp = req.get(url + "/api/chat/agent/getAgentList", headers=header2)
+    agents_info = {}
+    for agent in resp.json().get("data", []):
+        name = agent.get("name", "")
+        if "qwen" in name.lower():
+            agents_info["qwen3.7-plus"] = {"agent_id": agent["id"], "chat_id": 33}
+        elif "deepseek" in name.lower():
+            agents_info["deepseek-v4-flash"] = {"agent_id": agent["id"], "chat_id": 34}
+        elif "glm" in name.lower():
+            agents_info["glm-5.2"] = {"agent_id": agent["id"], "chat_id": 35}
+    print(f"Using existing agents: {json.dumps(agents_info, indent=2)}")
 
     all_results = {}
     model_order = ["qwen3.7-plus", "deepseek-v4-flash", "glm-5.2"]

@@ -1,0 +1,2714 @@
+{
+  "qwen3.7-plus": [
+    [
+      {
+        "query_idx": 0,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例，同时给出该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_a132685fcdf543028c2b17e70eeb757c",
+        "latency_ms": 3322.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 1,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_7020d9797c034027b6d37929293f5294",
+        "latency_ms": 3226.1,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 2,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌和其法人，其所在公司以及收入占该公司的总收入比例",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_fb52ddda8ced4f26a2099eb4de66f5d9",
+        "latency_ms": 3285.7,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 3,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例，同时给出该公司总部所在地",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_b5aaff4c7443445ababbc5720f4c3878",
+        "latency_ms": 3285.4,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 4,
+        "query_text": "在公司各品牌收入排名的利润占比最多0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d72a56e546e14c29827944b47487d437",
+        "latency_ms": 3400.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 5,
+        "query_text": "在公司各品牌收入排名的利润占比小于0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fdac78567f4c46e785c444be22f5c8e2",
+        "latency_ms": 3290.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 6,
+        "query_text": "在公司各品牌收入排名的利润占比不止0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1e922f6f2d474f14ab05e046bb01ea84",
+        "latency_ms": 3295.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 7,
+        "query_text": "注册资本不小于1亿的品牌中，哪个品牌的平均营收占比最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2c238e37a6c94f158082327fc2ccc3f3",
+        "latency_ms": 3340.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 8,
+        "query_text": "注册资本大于1亿的品牌中，哪5个品牌收入最少？并给出它们的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c954d5b84cda4cca936b08de49561683",
+        "latency_ms": 3323.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 9,
+        "query_text": "找到注册资本少于一个亿的品牌及其法人，并给出对应公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_469243960763479b8111e45feb0f7bc0",
+        "latency_ms": 3326.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 10,
+        "query_text": "给出注册资本不少于一亿的品牌及其法人，并给出对应的公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b3237d9f5f3e4dd591a8cab76fcfe113",
+        "latency_ms": 3192.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 11,
+        "query_text": "给出注册资本不超过一亿的的品牌及其法人，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c0655355fca149058aa4705b9daf753f",
+        "latency_ms": 3320.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 12,
+        "query_text": "给出注册资本少于一亿的品牌及其法人，并给出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_90398bc23a6c4274b92ebfa7e306e024",
+        "latency_ms": 3284.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 13,
+        "query_text": "给出注册资本不超过1亿的品牌及其法人，并找出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d094294312ae4af9b13d6d715da505b9",
+        "latency_ms": 3442.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 14,
+        "query_text": "在注册资本超过一亿的公司中，给出公司各品牌收入品牌的平均营收占比正好0.5的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_bb7bab9cd6784e8cb6816420fd908771",
+        "latency_ms": 3268.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 15,
+        "query_text": "在注册资本不超过一亿的公司中，给出个品牌收入排名五的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ed759649defc4d61a2a9432adc443d2d",
+        "latency_ms": 3243.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 16,
+        "query_text": "在各品牌收入在公司排名中，当品牌的注册资本不大于1亿时，给出公司各品牌收入排名的支出占比的平均值小于等于0.45的那些品牌的名称以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_051c019ff9d1471983bca74316bbc595",
+        "latency_ms": 3394.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 17,
+        "query_text": "在各品牌收入在公司排名中，当品牌的注册资本小于1亿时，给出公司各品牌收入排名数量小于等于5的那些品牌的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0a38917bfc7e4761af60edf61ed3e239",
+        "latency_ms": 3405.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 18,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6c56b6b77b524cb99fdeb5982a2398d6",
+        "latency_ms": 3446.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 19,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d3b232c0de7849eebab7b6afcef89a0c",
+        "latency_ms": 3408.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 20,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ddb7dfab2dea45799838f7b9addf16cc",
+        "latency_ms": 3254.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 21,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c2adafd016db49fe972051cec4a611d2",
+        "latency_ms": 3282.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 22,
+        "query_text": "在各品牌收入在公司排名中，给出收入排名不超过5的品牌及其法人",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_e004a72b038b4721a668f6276500ea3f",
+        "latency_ms": 3273.0,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 23,
+        "query_text": "在各品牌收入在公司排名中，给出在收入排名中的平均营收占比超过0.5的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_9222522dbc654c5ab947320b5d118654",
+        "latency_ms": 3355.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 24,
+        "query_text": "在各品牌收入在公司排名中，当公司各品牌收入排名的利润占比的平均值小于等于0.6时，给出品牌的名称以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d1db5605305c415fa8fa6d9a2b4816af",
+        "latency_ms": 3322.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 25,
+        "query_text": "在各品牌收入在公司排名中，当公司各品牌收入排名数量等于5时，给出品牌的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_66f12fbd6bf441a5bf10a556ab1c4c53",
+        "latency_ms": 3501.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 26,
+        "query_text": "哪个品牌收入的平均利润占比最大，给出品牌的法定代表人，以及其收入平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ed295293df8e4269a485541dff978ef4",
+        "latency_ms": 3349.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 27,
+        "query_text": "哪3个品牌的收入最多，给出品牌的法定代表人，以及其收入总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2fa44fb789574b0683f3f0a4e0f56ff7",
+        "latency_ms": 3360.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 28,
+        "query_text": "在公司各品牌收入排名的利润占比由少到多排列，给出对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_768c096384134bda96445df99b3f369f",
+        "latency_ms": 3361.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 29,
+        "query_text": "在公司各品牌收入排名的支出占比最少时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1973f05a606b45ffadb092b3845171d7",
+        "latency_ms": 3346.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 30,
+        "query_text": "在公司各品牌收入排名的支出占比最多时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比公司各品牌收入排名的利润占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ecb932d6e9d14d36a292d9b169883bb8",
+        "latency_ms": 3413.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 31,
+        "query_text": "在公司各品牌收入排名的利润占比最多时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3653ef0008f9453389c683f9d8ff16fd",
+        "latency_ms": 3378.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 32,
+        "query_text": "哪些法人的品牌的不在注册资本少于100万中，这些法定代表人的品牌都是哪些？",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0663b21a17b64f34bb53ef78ae34a563",
+        "latency_ms": 3241.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 33,
+        "query_text": "给出每一个品牌和其法人，所属的公司以及该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_cc6b9ea2cf4b4f4e9ce9b4f867d813aa",
+        "latency_ms": 3370.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 34,
+        "query_text": "给出每一个品牌和注册时所用资本，以及所属的公司",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_aa4bf2837a83424b9f0dd869e4ef451d",
+        "latency_ms": 3368.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 35,
+        "query_text": "给出每一个品牌和注册时所用资本，所属的公司以及该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d427d624fc364ae0adab2f177810fee7",
+        "latency_ms": 3440.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 36,
+        "query_text": "给出每一个品牌和注册时所用资本，所属的公司和总部所在地",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_42676db86907430794b50e55ecff8db5",
+        "latency_ms": 3313.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 37,
+        "query_text": "给出每一个品牌和其法人，所属的公司以及总部所在城市",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_e43ecb2d914f4ff194c63e7475651f7f",
+        "latency_ms": 3288.0,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 38,
+        "query_text": "有自己品牌的公司有哪些？给出这些公司和总部所在地",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_042ced5dbd9e4d2295d1b9f9b3191c99",
+        "latency_ms": 3295.9,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 39,
+        "query_text": "有自己品牌的公司有哪些？给出这些公司和年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b1ed39b255b840408e227218682b8c26",
+        "latency_ms": 3209.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 40,
+        "query_text": "在品牌的注册资本至少1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_83443569ce5e43f1adcda4b570f83ea1",
+        "latency_ms": 3168.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 41,
+        "query_text": "在品牌的注册资本少于1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c33be11e5c5442078d3f549e7ffa8f14",
+        "latency_ms": 3290.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 42,
+        "query_text": "在品牌的注册资本超过1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_626084fe789e476c8c03954461f89d26",
+        "latency_ms": 3244.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 43,
+        "query_text": "在品牌的注册资本最多1亿时，给出公司的名称以及公司的年营业额品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5603e3e9feef4b518d25f8068711da77",
+        "latency_ms": 3297.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 44,
+        "query_text": "找到注册资本不止1亿，且年营业额不超过288亿的公司，以及给出总部地点，法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e9a6ccec278142859bfc19d9dcc0103c",
+        "latency_ms": 3223.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 45,
+        "query_text": "找出注册资本不止一亿，且年营业额低于288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3cc0467f71354206943b291ea7b4b9c9",
+        "latency_ms": 3432.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 46,
+        "query_text": "找出注册资本不到1亿，且年营业额少于288亿的公司，以及给出总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1ce55a4f52ba4a859c4a6b2d3b5565df",
+        "latency_ms": 3351.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 47,
+        "query_text": "给出注册资本不超过1亿且年营业额不少于288亿的公司，总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e6391d851605403f961a31ed67fe91b6",
+        "latency_ms": 3327.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 48,
+        "query_text": "给出注册资本不低于一亿，且年营业额不止288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2bb0d0be0a724a07b9944ed926c52770",
+        "latency_ms": 3220.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 49,
+        "query_text": "给出注册资本不超过一亿，且年营业额超过288亿的公司，总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fc62e130601d403e9d2c6b5030f614f8",
+        "latency_ms": 3296.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 50,
+        "query_text": "给出注册资本超过一亿且年营业额不止288亿的公司，以及总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5a02118595374426b1e08281f2906cf7",
+        "latency_ms": 3343.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 51,
+        "query_text": "给出注册资本不超过一亿，且年营业额少于288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2b311d085e9a4c6d9562e9680db77885",
+        "latency_ms": 3291.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 52,
+        "query_text": "找出注册资本少于一亿，且年营业额不超过288亿的公司，以及总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f8943959b6d14668ad75f6ed97971701",
+        "latency_ms": 3285.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 53,
+        "query_text": "在公司品牌历年收入的利润最多500亿时，给出公司的名称品牌的名称并给出公司品牌历年收入的营收",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_163c78a95ec5488498331209895c8009",
+        "latency_ms": 3377.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 54,
+        "query_text": "在公司品牌历年收入的营收同比增长至少1时，给出公司的名称品牌的名称并给出公司品牌历年收入的营收",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5a44fa52967244449496d0de53c48eab",
+        "latency_ms": 3249.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 55,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司的平均营收占比最少？,并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0c743af972ca49aeba96b821488301d2",
+        "latency_ms": 3282.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 56,
+        "query_text": "年营业额不小于288亿的公司中，哪个公司的平均营收占比最大？并给出它的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_412ea653938f4c4aa5c083661b7b4bb1",
+        "latency_ms": 3321.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 57,
+        "query_text": "注册资本大于1亿的品牌中，哪个品牌历年收入的平均营收最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6fd88a502bac40588b6465a1aa116bf8",
+        "latency_ms": 3303.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 58,
+        "query_text": "注册资本不大于1亿的品牌中，哪个品牌历年收入的平均营收最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_564b173a3f644734baa4dd3d2b480270",
+        "latency_ms": 3368.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 59,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司品牌的平均注册资本最多？并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_bcd6f68259e242ffa006e0c334e6a2bf",
+        "latency_ms": 3358.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 60,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司品牌的平均注册资本总共最少？并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2274f55db994407db4ead964b48d1c3b",
+        "latency_ms": 3310.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 61,
+        "query_text": "找到年营业额不少于288亿的公司及总部地点，并给出对应的公司的最高营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_efadfd7ea1ed4cb6bcfe2ac5aa95d98a",
+        "latency_ms": 3435.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 62,
+        "query_text": "给出年营业额少于288亿的公司及总部地点，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_041d7f38f6d84642b01130c5a0864c6e",
+        "latency_ms": 3281.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 63,
+        "query_text": "给出年营业额不止288亿的公司及总部地点，并给出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f82f48a344a84fb7b1fc1a1f6bc43b12",
+        "latency_ms": 3295.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 64,
+        "query_text": "找出年营业额不少于288亿的公司及总部地点，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_7b5abf5da04d4b29bad8fb1e850e8e95",
+        "latency_ms": 3300.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 65,
+        "query_text": "请找出年营业额不超过288亿的公司及总部地点，并给出对应的公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0088399a1a1944b18c1c0b6fcede69c7",
+        "latency_ms": 3342.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 66,
+        "query_text": "找到品牌的注册资本不大于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4ef1831e00a34914ab6257b24f4a62a3",
+        "latency_ms": 3276.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 67,
+        "query_text": "找到品牌的注册资本不小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e5fb220a371e4ceb9572a946458b8c56",
+        "latency_ms": 3268.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 68,
+        "query_text": "找到品牌的注册资本小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_64e25068f5ff43a4b37c4e0277ec0c32",
+        "latency_ms": 3200.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 69,
+        "query_text": "找到品牌的注册资本不大于1亿品牌的法定代表人并给出公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_27dd154160964f70904c834a52b47bca",
+        "latency_ms": 3243.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 70,
+        "query_text": "找到品牌的注册资本小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_001141f9107c42a48c113343c8732c72",
+        "latency_ms": 3315.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 71,
+        "query_text": "给出年营业额超过288亿的公司及总部地点，并给出对应的品牌中的最小注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_527f9c69b06d47638cdd4236d875a403",
+        "latency_ms": 3286.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 72,
+        "query_text": "给出年营业额不超过288亿的公司及总部地点，并给出对应的品牌中的最小注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_db40fa75116443618dce8504d9a6fc4c",
+        "latency_ms": 3366.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 73,
+        "query_text": "给出不超过288亿年营业额的公司及总部地点，并给出这些品牌中的平均注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_aae814a552754aff953d83e5b7dc5b6b",
+        "latency_ms": 3282.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 74,
+        "query_text": "给出不超过288亿年营业额的公司及其总部地点，并给出这些品牌的的最大注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_26ac05fb9033457d9aadc44a575e9753",
+        "latency_ms": 3295.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 75,
+        "query_text": "给出年营业额超过288亿的公司及其总部地点，并给出这些品牌的的总注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_8c9237167e0f4c94bd9677a48e08c0a6",
+        "latency_ms": 3335.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 76,
+        "query_text": "给出年营业额不超过288亿的各公司品牌中，给出收入排名中的营收占比加起来不超过0.5的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_99c19801bb9c4650b2d3904d761240f1",
+        "latency_ms": 3419.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 77,
+        "query_text": "给出年营业额低于288亿的各公司的各品牌中，给出收入排名中的总营收占比不超过0.5的公司及总部地点中",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_9de9003dc9b94d39a48006c837cdeb00",
+        "latency_ms": 3450.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 78,
+        "query_text": "在年营业额不少于288亿的公司中，给出品牌不超过5个的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_58a4c380db4f416f86418c467e486ca8",
+        "latency_ms": 3350.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 79,
+        "query_text": "在年营业额不超过288亿的公司中，给出品牌少于5个的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b387d81ebe2148bb89e74a52d09eb8aa",
+        "latency_ms": 3219.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 80,
+        "query_text": "在各公司的各品牌收入排名中，当公司的年营业额大于288亿时，给出公司各品牌收入排名数量大于5的那些公司的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_da4643cdde874a16b7361ee54435311b",
+        "latency_ms": 3290.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 81,
+        "query_text": "在各公司的各品牌收入排名中，当公司的年营业额小于288亿时，给出公司各品牌收入排名的利润占比的平均值大于0.75的那些公司的名称以及公司各品牌收入排名的营收占比的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_a22d0775c1124c4d97a14837ca0b3b9b",
+        "latency_ms": 3471.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 82,
+        "query_text": "在各品牌的历年收入中，当品牌的注册资本不大于1亿时，给出公司品牌历年收入的利润同比增长的总和小于等于1000000的那些品牌的名称以及公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ce8afb62164c4be1854b5426b593693b",
+        "latency_ms": 3405.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 83,
+        "query_text": "在各品牌的历年收入中，当品牌的注册资本小于1亿时，给出公司品牌历年收入数量小于5的那些品牌的名称以及公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_361522dc720d43b998446c4b8f7f04c8",
+        "latency_ms": 3309.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 84,
+        "query_text": "在各品牌所属的公司中，当公司的年营业额大于288亿时，给出品牌数量小于5的那些公司的名称以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6a5a5ba2cca243288bdb38a514e6e523",
+        "latency_ms": 3326.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 85,
+        "query_text": "在各品牌所属的公司中，当公司的年营业额小于288亿时，给出品牌数量大于等于5的那些公司的名称以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_740d623e640c4ff8bb2411c8f75acf49",
+        "latency_ms": 3341.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 86,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_cf680f444c7440679c17b8244446059b",
+        "latency_ms": 3354.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 87,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的最小营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c961f28d97144c72a99d0049fcec9041",
+        "latency_ms": 3441.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 88,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_a503807fa889435bb7f20dbb1db1b977",
+        "latency_ms": 3461.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 89,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_927743dc5e2645e384624bfaf3bbca8f",
+        "latency_ms": 3376.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 90,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5c46cb8a9e0f40f3847a115eaa121ac2",
+        "latency_ms": 3329.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 91,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_8ccd114e3c884436987e30cf795a7840",
+        "latency_ms": 3296.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 92,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4c141c0ee86b4878bba692ffe4b2877f",
+        "latency_ms": 3244.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 93,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6b7e7b2c60314b7594ef5cd9b4c49b96",
+        "latency_ms": 3309.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 94,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fe49f0f18b20415cb35de89d2da53a41",
+        "latency_ms": 3368.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 95,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2b2264e2301a4dd789483d6fc5800b46",
+        "latency_ms": 3404.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 96,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_cd13795e8bd146d39a68a428ea902875",
+        "latency_ms": 3291.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 97,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_79fbde8b6e2f44b8944fd9d442ddad33",
+        "latency_ms": 3306.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 98,
+        "query_text": "在各公司的各品牌收入排名种，哪些公司的品牌排名的总营收占比超过0.5，并给出总部的地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3ea61bb36be34b48a2cc6381ea1dde9f",
+        "latency_ms": 3295.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 99,
+        "query_text": "在各公司的各品牌收入排名中，哪些公司的品牌收入排名超过5，并给出公司的总部地点",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_1bcda31d309e460197529a5427236a01",
+        "latency_ms": 3220.8,
+        "est_completion_tokens": 252
+      }
+    ]
+  ],
+  "deepseek-v4-flash": [
+    [
+      {
+        "query_idx": 0,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例，同时给出该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fbc7a8b022fc4d98a0e75b1cda1d7c7c",
+        "latency_ms": 3372.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 1,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_3466281fc8ab494c8c0bfdf6dcd75217",
+        "latency_ms": 3374.2,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 2,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌和其法人，其所在公司以及收入占该公司的总收入比例",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_af8dd1f9d224420ba6eaacbdf4779ffc",
+        "latency_ms": 3334.3,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 3,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例，同时给出该公司总部所在地",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_ab8a9895cb1c4d7f916cac2d83cdd48e",
+        "latency_ms": 3492.8,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 4,
+        "query_text": "在公司各品牌收入排名的利润占比最多0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0ee3d354a8cf47498a292f326d63c3a5",
+        "latency_ms": 3374.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 5,
+        "query_text": "在公司各品牌收入排名的利润占比小于0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_8d97c4235221450f8a52e13f6c57031f",
+        "latency_ms": 3341.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 6,
+        "query_text": "在公司各品牌收入排名的利润占比不止0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4f650bdbc7b54c6abbe1c9677b7d103f",
+        "latency_ms": 3312.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 7,
+        "query_text": "注册资本不小于1亿的品牌中，哪个品牌的平均营收占比最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_372f53236c1b4050be1d495f820da572",
+        "latency_ms": 3351.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 8,
+        "query_text": "注册资本大于1亿的品牌中，哪5个品牌收入最少？并给出它们的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1172236d4f234a35b4add9ea28131390",
+        "latency_ms": 3229.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 9,
+        "query_text": "找到注册资本少于一个亿的品牌及其法人，并给出对应公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5da078ce04e2468cbaa17f6a22706798",
+        "latency_ms": 3399.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 10,
+        "query_text": "给出注册资本不少于一亿的品牌及其法人，并给出对应的公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_aa6e857694994622aa935a029c257317",
+        "latency_ms": 3385.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 11,
+        "query_text": "给出注册资本不超过一亿的的品牌及其法人，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6c12aff3f4ca4b4d93c5ac99cdae1eb7",
+        "latency_ms": 3303.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 12,
+        "query_text": "给出注册资本少于一亿的品牌及其法人，并给出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4b716172afc24eb3b8af72dbf93c3722",
+        "latency_ms": 3394.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 13,
+        "query_text": "给出注册资本不超过1亿的品牌及其法人，并找出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_780a6145866843058ea1a25a56146caa",
+        "latency_ms": 3449.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 14,
+        "query_text": "在注册资本超过一亿的公司中，给出公司各品牌收入品牌的平均营收占比正好0.5的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d6a1f6baf84f4837bc5064353ceebcb8",
+        "latency_ms": 3309.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 15,
+        "query_text": "在注册资本不超过一亿的公司中，给出个品牌收入排名五的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_67c144b4800a43cfb78112ed1d1cf519",
+        "latency_ms": 3388.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 16,
+        "query_text": "在各品牌收入在公司排名中，当品牌的注册资本不大于1亿时，给出公司各品牌收入排名的支出占比的平均值小于等于0.45的那些品牌的名称以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_47f3527f4a5f4b4aa4b5ef236f8bc4bd",
+        "latency_ms": 3380.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 17,
+        "query_text": "在各品牌收入在公司排名中，当品牌的注册资本小于1亿时，给出公司各品牌收入排名数量小于等于5的那些品牌的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_69a89c156f534439b374df7e2cf1bd2c",
+        "latency_ms": 3466.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 18,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_97b13d1a78374e4dabfce1cf84a54d99",
+        "latency_ms": 3476.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 19,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b354469f6f5c4161950355a328260dbb",
+        "latency_ms": 3355.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 20,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_05ab7dcd8a33418aac6c53d2fe5e4fd4",
+        "latency_ms": 3432.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 21,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ff9c16f009574feda2c6eb4e77e8675f",
+        "latency_ms": 3374.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 22,
+        "query_text": "在各品牌收入在公司排名中，给出收入排名不超过5的品牌及其法人",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_621cb05d208f428da103fc9b715dee89",
+        "latency_ms": 3229.7,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 23,
+        "query_text": "在各品牌收入在公司排名中，给出在收入排名中的平均营收占比超过0.5的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_329da2a596b849c79e602614bde927a7",
+        "latency_ms": 3278.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 24,
+        "query_text": "在各品牌收入在公司排名中，当公司各品牌收入排名的利润占比的平均值小于等于0.6时，给出品牌的名称以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fd4d99473f2046ed958d674da8c21bb1",
+        "latency_ms": 3315.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 25,
+        "query_text": "在各品牌收入在公司排名中，当公司各品牌收入排名数量等于5时，给出品牌的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_cc263ea9158847659998a03b2fa0e95e",
+        "latency_ms": 3388.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 26,
+        "query_text": "哪个品牌收入的平均利润占比最大，给出品牌的法定代表人，以及其收入平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1e319ecc9a1d4692aab83c3a1d5ed381",
+        "latency_ms": 3432.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 27,
+        "query_text": "哪3个品牌的收入最多，给出品牌的法定代表人，以及其收入总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_987e2a2cbb04419cad00f988e238bc7c",
+        "latency_ms": 3337.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 28,
+        "query_text": "在公司各品牌收入排名的利润占比由少到多排列，给出对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_186af97d5d67451cb40d126780d5ca8f",
+        "latency_ms": 3338.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 29,
+        "query_text": "在公司各品牌收入排名的支出占比最少时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2532ce5bcde64e91b77c7b1b96fbcb41",
+        "latency_ms": 3417.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 30,
+        "query_text": "在公司各品牌收入排名的支出占比最多时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比公司各品牌收入排名的利润占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_91ece5e79df94df19e9090cfa5ec9df1",
+        "latency_ms": 3392.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 31,
+        "query_text": "在公司各品牌收入排名的利润占比最多时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_9e9f0fb74f894256a85c9d1e7cdfc2d5",
+        "latency_ms": 3361.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 32,
+        "query_text": "哪些法人的品牌的不在注册资本少于100万中，这些法定代表人的品牌都是哪些？",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5d6de23d861d46a38d48f13b78cad24a",
+        "latency_ms": 3316.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 33,
+        "query_text": "给出每一个品牌和其法人，所属的公司以及该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_379f4d7e8a904db1a1515182dcdd57ba",
+        "latency_ms": 3354.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 34,
+        "query_text": "给出每一个品牌和注册时所用资本，以及所属的公司",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e0859ff2752943179b90e734d475c4ab",
+        "latency_ms": 3300.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 35,
+        "query_text": "给出每一个品牌和注册时所用资本，所属的公司以及该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_66bdd9e519184a92bc1d3bda08304749",
+        "latency_ms": 3207.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 36,
+        "query_text": "给出每一个品牌和注册时所用资本，所属的公司和总部所在地",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e9d682ee45ba4607ac1ee47658ead2b7",
+        "latency_ms": 3275.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 37,
+        "query_text": "给出每一个品牌和其法人，所属的公司以及总部所在城市",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_251b071abab048319fecf21291fa426c",
+        "latency_ms": 3227.0,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 38,
+        "query_text": "有自己品牌的公司有哪些？给出这些公司和总部所在地",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_d299e2b6d6394b40afa9aee83f2b1dde",
+        "latency_ms": 3355.4,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 39,
+        "query_text": "有自己品牌的公司有哪些？给出这些公司和年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_204ab6b0cf944a29b8702e67f8cce2ce",
+        "latency_ms": 3397.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 40,
+        "query_text": "在品牌的注册资本至少1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4b97006236364d24af94eb305dd98dc2",
+        "latency_ms": 3288.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 41,
+        "query_text": "在品牌的注册资本少于1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_60d3fbbe6fdf4fb397b5a65023cef194",
+        "latency_ms": 3246.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 42,
+        "query_text": "在品牌的注册资本超过1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f3150194c3674b49882123a709bd9b8a",
+        "latency_ms": 3235.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 43,
+        "query_text": "在品牌的注册资本最多1亿时，给出公司的名称以及公司的年营业额品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_728da09725934f64aa697ffd560b6099",
+        "latency_ms": 3287.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 44,
+        "query_text": "找到注册资本不止1亿，且年营业额不超过288亿的公司，以及给出总部地点，法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_45a1cd6ac9ab4bbdb1818e664b43905e",
+        "latency_ms": 3286.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 45,
+        "query_text": "找出注册资本不止一亿，且年营业额低于288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6a42a99c37ca4bc7a95fae64f83d092a",
+        "latency_ms": 3293.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 46,
+        "query_text": "找出注册资本不到1亿，且年营业额少于288亿的公司，以及给出总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f3fc3d09792347b2a566b44a84014304",
+        "latency_ms": 3313.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 47,
+        "query_text": "给出注册资本不超过1亿且年营业额不少于288亿的公司，总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e360be78c7f44aad86007f43ec89b0b0",
+        "latency_ms": 3377.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 48,
+        "query_text": "给出注册资本不低于一亿，且年营业额不止288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1b2ba0339ba041dcaa9f6ff9bd82728c",
+        "latency_ms": 3249.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 49,
+        "query_text": "给出注册资本不超过一亿，且年营业额超过288亿的公司，总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_759f3a69efab4d77b9d113f3bee0a6f9",
+        "latency_ms": 3597.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 50,
+        "query_text": "给出注册资本超过一亿且年营业额不止288亿的公司，以及总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6f74604809f44428969f76fa4ad103a0",
+        "latency_ms": 3371.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 51,
+        "query_text": "给出注册资本不超过一亿，且年营业额少于288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e009f065f3ce42969fabca1e992fdc99",
+        "latency_ms": 3354.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 52,
+        "query_text": "找出注册资本少于一亿，且年营业额不超过288亿的公司，以及总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_a7c9e9001dc34f8a994c50c040d2df40",
+        "latency_ms": 3314.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 53,
+        "query_text": "在公司品牌历年收入的利润最多500亿时，给出公司的名称品牌的名称并给出公司品牌历年收入的营收",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_7937a4d1a1534557bd7a42bdf24e7cdc",
+        "latency_ms": 3357.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 54,
+        "query_text": "在公司品牌历年收入的营收同比增长至少1时，给出公司的名称品牌的名称并给出公司品牌历年收入的营收",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_48b1a51d036746419dfc353e4080a23e",
+        "latency_ms": 3211.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 55,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司的平均营收占比最少？,并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3ae0a709922e4588bcfebc7f84ebeead",
+        "latency_ms": 3269.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 56,
+        "query_text": "年营业额不小于288亿的公司中，哪个公司的平均营收占比最大？并给出它的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c56757c6a978451db3288a51e5870062",
+        "latency_ms": 3293.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 57,
+        "query_text": "注册资本大于1亿的品牌中，哪个品牌历年收入的平均营收最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_13d9a39a50d34276a580cf34a8f75ba1",
+        "latency_ms": 3279.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 58,
+        "query_text": "注册资本不大于1亿的品牌中，哪个品牌历年收入的平均营收最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3cdaf8bb4aaa4dcb913128055c7c30c6",
+        "latency_ms": 3198.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 59,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司品牌的平均注册资本最多？并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_43612b7f3db142b7becd7894a3b8b116",
+        "latency_ms": 3261.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 60,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司品牌的平均注册资本总共最少？并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_26390274404543a989d479dc1f8454aa",
+        "latency_ms": 3366.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 61,
+        "query_text": "找到年营业额不少于288亿的公司及总部地点，并给出对应的公司的最高营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_bbb3c839c39c4f998f4419adcb41a17f",
+        "latency_ms": 3193.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 62,
+        "query_text": "给出年营业额少于288亿的公司及总部地点，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e2f53a3a267b437680dc196d7c198623",
+        "latency_ms": 3283.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 63,
+        "query_text": "给出年营业额不止288亿的公司及总部地点，并给出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0c3b7ae5919d4bccaab4c15537898552",
+        "latency_ms": 3310.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 64,
+        "query_text": "找出年营业额不少于288亿的公司及总部地点，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_74783b4bdb194b6a92b7866dd26e143c",
+        "latency_ms": 3263.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 65,
+        "query_text": "请找出年营业额不超过288亿的公司及总部地点，并给出对应的公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_7fdb19c2ac1747ae87f67bdb96aec2da",
+        "latency_ms": 3266.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 66,
+        "query_text": "找到品牌的注册资本不大于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c7f01de12c834c06a22222a49e8b3a84",
+        "latency_ms": 3305.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 67,
+        "query_text": "找到品牌的注册资本不小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d2ebfc88cf344d8b91a2da0afe5e7b4b",
+        "latency_ms": 3291.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 68,
+        "query_text": "找到品牌的注册资本小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_da28eaf08cc94fe5b3fd9acf9c4c5ae8",
+        "latency_ms": 3217.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 69,
+        "query_text": "找到品牌的注册资本不大于1亿品牌的法定代表人并给出公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_844611ced00b460e81c906fdcf6ce645",
+        "latency_ms": 3314.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 70,
+        "query_text": "找到品牌的注册资本小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_07ee8b5ad28e45f286d91d3c4ac7df5d",
+        "latency_ms": 3326.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 71,
+        "query_text": "给出年营业额超过288亿的公司及总部地点，并给出对应的品牌中的最小注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_80438753c57f427d8661202943eb2f42",
+        "latency_ms": 3341.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 72,
+        "query_text": "给出年营业额不超过288亿的公司及总部地点，并给出对应的品牌中的最小注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_410410750fa548e2acd0e6535931b672",
+        "latency_ms": 3192.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 73,
+        "query_text": "给出不超过288亿年营业额的公司及总部地点，并给出这些品牌中的平均注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_9fa02aedf930484ba76774fd0bba8123",
+        "latency_ms": 3300.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 74,
+        "query_text": "给出不超过288亿年营业额的公司及其总部地点，并给出这些品牌的的最大注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_302816de2d0d46c8828878302b564135",
+        "latency_ms": 3292.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 75,
+        "query_text": "给出年营业额超过288亿的公司及其总部地点，并给出这些品牌的的总注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_bd8bd57acbb2482db08f6af1aa0ebc8e",
+        "latency_ms": 3322.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 76,
+        "query_text": "给出年营业额不超过288亿的各公司品牌中，给出收入排名中的营收占比加起来不超过0.5的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_9461e1774fc04eb5a89f8785392735a8",
+        "latency_ms": 3322.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 77,
+        "query_text": "给出年营业额低于288亿的各公司的各品牌中，给出收入排名中的总营收占比不超过0.5的公司及总部地点中",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f650606d8e484c17a35ae2d3bf55b352",
+        "latency_ms": 3335.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 78,
+        "query_text": "在年营业额不少于288亿的公司中，给出品牌不超过5个的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fe128627918d4486804687bf1487b459",
+        "latency_ms": 3228.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 79,
+        "query_text": "在年营业额不超过288亿的公司中，给出品牌少于5个的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3c51c01c258f443487a3526a001419f0",
+        "latency_ms": 3393.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 80,
+        "query_text": "在各公司的各品牌收入排名中，当公司的年营业额大于288亿时，给出公司各品牌收入排名数量大于5的那些公司的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0e8a06d94acb4917b118d90c57ee16ee",
+        "latency_ms": 3381.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 81,
+        "query_text": "在各公司的各品牌收入排名中，当公司的年营业额小于288亿时，给出公司各品牌收入排名的利润占比的平均值大于0.75的那些公司的名称以及公司各品牌收入排名的营收占比的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_be2e112b4ee4428a91ab8d9e358f2f10",
+        "latency_ms": 3417.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 82,
+        "query_text": "在各品牌的历年收入中，当品牌的注册资本不大于1亿时，给出公司品牌历年收入的利润同比增长的总和小于等于1000000的那些品牌的名称以及公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_394a3b52b67f4917955315ecb7b25751",
+        "latency_ms": 3475.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 83,
+        "query_text": "在各品牌的历年收入中，当品牌的注册资本小于1亿时，给出公司品牌历年收入数量小于5的那些品牌的名称以及公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b7f8499bbac34efdbd4e41db02e4fbbd",
+        "latency_ms": 3338.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 84,
+        "query_text": "在各品牌所属的公司中，当公司的年营业额大于288亿时，给出品牌数量小于5的那些公司的名称以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4431550acd0c4fff91705c55d072fa79",
+        "latency_ms": 3318.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 85,
+        "query_text": "在各品牌所属的公司中，当公司的年营业额小于288亿时，给出品牌数量大于等于5的那些公司的名称以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3dbaee937d8344e3aaf9cefc286af0bb",
+        "latency_ms": 3331.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 86,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ca9b48cf198241c18e387101a18b1884",
+        "latency_ms": 3352.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 87,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的最小营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5b4f1b7957ee4fb4b955ceab990ae9dd",
+        "latency_ms": 3364.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 88,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d7ea580e5c234ab0babe567538258c2d",
+        "latency_ms": 3284.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 89,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ae45d382d33444c0961e9a6e0bb4971a",
+        "latency_ms": 3324.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 90,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_dc26ff07dd754ff5870f5a0542eefe49",
+        "latency_ms": 3284.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 91,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_054259d5d8f14df38eddcd46f1d2f854",
+        "latency_ms": 3401.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 92,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b86693ec9abc4441bf9d855a8647a4ad",
+        "latency_ms": 3416.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 93,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_8b0784e86b32460383e31eb6ad6430eb",
+        "latency_ms": 3410.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 94,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ad39a7b7575e41dfbdf0ecbb41f57480",
+        "latency_ms": 3465.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 95,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0ec39052d9754eceacca4a11805a889e",
+        "latency_ms": 3428.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 96,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d8a5d2ae333e466792dbc5fc40ed89fe",
+        "latency_ms": 3380.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 97,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_704c4fbd1fa14a118c66905adb4cfaba",
+        "latency_ms": 3362.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 98,
+        "query_text": "在各公司的各品牌收入排名种，哪些公司的品牌排名的总营收占比超过0.5，并给出总部的地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_29173ab552854f41891d50821bf82f98",
+        "latency_ms": 3354.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 99,
+        "query_text": "在各公司的各品牌收入排名中，哪些公司的品牌收入排名超过5，并给出公司的总部地点",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_b5c076e2d367459c9c24ead1a2b5967b",
+        "latency_ms": 3386.5,
+        "est_completion_tokens": 252
+      }
+    ]
+  ],
+  "glm-5.2": [
+    [
+      {
+        "query_idx": 0,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例，同时给出该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0a840dcc7484416caa33afadb3cb32b5",
+        "latency_ms": 3369.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 1,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_cc04863ee5c640e2893d6e0cffb04813",
+        "latency_ms": 3356.9,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 2,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌和其法人，其所在公司以及收入占该公司的总收入比例",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_e1a946d8e9824b0b8eb92629b5d3f419",
+        "latency_ms": 3299.5,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 3,
+        "query_text": "在各公司所有品牌收入排名中，给出每一个品牌，其所在公司以及收入占该公司的总收入比例，同时给出该公司总部所在地",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_7561bcc7893a4421903e181b9423a398",
+        "latency_ms": 3441.8,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 4,
+        "query_text": "在公司各品牌收入排名的利润占比最多0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fd8ac2d2219544a6b078d286c1bfb22c",
+        "latency_ms": 3331.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 5,
+        "query_text": "在公司各品牌收入排名的利润占比小于0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fd12091f42234a03a6246fa3e0df4942",
+        "latency_ms": 3223.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 6,
+        "query_text": "在公司各品牌收入排名的利润占比不止0.1时，给出公司的名称品牌的名称并给出公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1d3370996d214695b36c5595a9c876d9",
+        "latency_ms": 3259.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 7,
+        "query_text": "注册资本不小于1亿的品牌中，哪个品牌的平均营收占比最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_208767e26b8648b2b8bb67b21b77d3ec",
+        "latency_ms": 3394.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 8,
+        "query_text": "注册资本大于1亿的品牌中，哪5个品牌收入最少？并给出它们的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1542fc7c14d84ddb9ed72fbf340b7ea1",
+        "latency_ms": 3694.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 9,
+        "query_text": "找到注册资本少于一个亿的品牌及其法人，并给出对应公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1d4cb9996e2c4e3192b78815d5fa6bea",
+        "latency_ms": 3486.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 10,
+        "query_text": "给出注册资本不少于一亿的品牌及其法人，并给出对应的公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3d563aeb21b748f7adaaec9f67cc6dd8",
+        "latency_ms": 3395.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 11,
+        "query_text": "给出注册资本不超过一亿的的品牌及其法人，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4b043e5ec7ff4517ad3e06a571aa2f3a",
+        "latency_ms": 3325.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 12,
+        "query_text": "给出注册资本少于一亿的品牌及其法人，并给出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4d0ef5af1ba947c1a2b6631f1d4e5f6b",
+        "latency_ms": 3450.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 13,
+        "query_text": "给出注册资本不超过1亿的品牌及其法人，并找出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_87c1f4f9bbca431eaac52b086f0f3c42",
+        "latency_ms": 3336.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 14,
+        "query_text": "在注册资本超过一亿的公司中，给出公司各品牌收入品牌的平均营收占比正好0.5的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d4a0609be22f41ee84b0fb9f36c304b5",
+        "latency_ms": 3504.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 15,
+        "query_text": "在注册资本不超过一亿的公司中，给出个品牌收入排名五的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_88b687d237a143b4b215c311c52c929e",
+        "latency_ms": 3449.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 16,
+        "query_text": "在各品牌收入在公司排名中，当品牌的注册资本不大于1亿时，给出公司各品牌收入排名的支出占比的平均值小于等于0.45的那些品牌的名称以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b544630656354bf3bd8261b6817690b4",
+        "latency_ms": 3620.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 17,
+        "query_text": "在各品牌收入在公司排名中，当品牌的注册资本小于1亿时，给出公司各品牌收入排名数量小于等于5的那些品牌的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_bb3dbfe17284439bb982ee6b2a8eb2c6",
+        "latency_ms": 3509.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 18,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_37d2a93b3ba742d39897c33b8f7b4c6d",
+        "latency_ms": 3278.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 19,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0f08fd6f93c249f7b90ed96993939bec",
+        "latency_ms": 3399.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 20,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_42b16459f3244ea6a255648922bf97c5",
+        "latency_ms": 3460.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 21,
+        "query_text": "在各品牌收入在公司排名中，给出每个品牌的名称，品牌的法定代表人，以及公司各品牌收入排名的营收占比的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e784a16e8334439492759951d1eaca5b",
+        "latency_ms": 3302.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 22,
+        "query_text": "在各品牌收入在公司排名中，给出收入排名不超过5的品牌及其法人",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_f7c0f5f28d644a3191c7a7a525f8ed15",
+        "latency_ms": 3242.3,
+        "est_completion_tokens": 241
+      },
+      {
+        "query_idx": 23,
+        "query_text": "在各品牌收入在公司排名中，给出在收入排名中的平均营收占比超过0.5的品牌及其法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4c61343aacb84eaca78a8b22a2d71ae8",
+        "latency_ms": 3398.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 24,
+        "query_text": "在各品牌收入在公司排名中，当公司各品牌收入排名的利润占比的平均值小于等于0.6时，给出品牌的名称以及公司各品牌收入排名的营收占比的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_91d559a33db9468e83b131ae4d6d6f6b",
+        "latency_ms": 3421.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 25,
+        "query_text": "在各品牌收入在公司排名中，当公司各品牌收入排名数量等于5时，给出品牌的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_7ec7023133e24325ba1d08ca15663e30",
+        "latency_ms": 3330.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 26,
+        "query_text": "哪个品牌收入的平均利润占比最大，给出品牌的法定代表人，以及其收入平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4382d92b9b7f4b8b979a2b93b93bd0cd",
+        "latency_ms": 3387.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 27,
+        "query_text": "哪3个品牌的收入最多，给出品牌的法定代表人，以及其收入总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0f182d1b5ede4e9d8a3c602b7acf76de",
+        "latency_ms": 3324.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 28,
+        "query_text": "在公司各品牌收入排名的利润占比由少到多排列，给出对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_8694e942db08410594367a0ce776054c",
+        "latency_ms": 3398.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 29,
+        "query_text": "在公司各品牌收入排名的支出占比最少时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6ec1e624194f437990f9bb13097ba955",
+        "latency_ms": 3310.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 30,
+        "query_text": "在公司各品牌收入排名的支出占比最多时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比公司各品牌收入排名的利润占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_707f87ed1ce945e5b488cbfb871461ad",
+        "latency_ms": 3390.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 31,
+        "query_text": "在公司各品牌收入排名的利润占比最多时，给出排名前3对应的品牌的名称公司的名称以及公司各品牌收入排名的营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_322b7195be75450b914d9e4b4e2aab66",
+        "latency_ms": 3469.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 32,
+        "query_text": "哪些法人的品牌的不在注册资本少于100万中，这些法定代表人的品牌都是哪些？",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_8c0097d39bfe485db0db50bca1fd7d29",
+        "latency_ms": 3222.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 33,
+        "query_text": "给出每一个品牌和其法人，所属的公司以及该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d53f1d211f34455e830f0a44c348a531",
+        "latency_ms": 3314.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 34,
+        "query_text": "给出每一个品牌和注册时所用资本，以及所属的公司",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c8896500c72d4592a47f376a048d7493",
+        "latency_ms": 3244.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 35,
+        "query_text": "给出每一个品牌和注册时所用资本，所属的公司以及该公司的年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d7dbb45c92324463b56cd104d21c2f2d",
+        "latency_ms": 3332.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 36,
+        "query_text": "给出每一个品牌和注册时所用资本，所属的公司和总部所在地",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_abd35ceea1de414ab1bb94613ca4f639",
+        "latency_ms": 3178.9,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 37,
+        "query_text": "给出每一个品牌和其法人，所属的公司以及总部所在城市",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_1f6b8a7caef24f0ab8454a537c6a51b2",
+        "latency_ms": 3303.1,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 38,
+        "query_text": "有自己品牌的公司有哪些？给出这些公司和总部所在地",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_dd4c187dbc164a92b349ab8be33ce28c",
+        "latency_ms": 3130.7,
+        "est_completion_tokens": 252
+      },
+      {
+        "query_idx": 39,
+        "query_text": "有自己品牌的公司有哪些？给出这些公司和年营业额",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2039ee1a3c5a49da8eeba66c8e9ddd87",
+        "latency_ms": 3272.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 40,
+        "query_text": "在品牌的注册资本至少1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_bf5301ac61b94ca9bf9b8b109be53612",
+        "latency_ms": 3361.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 41,
+        "query_text": "在品牌的注册资本少于1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_a8a11a914fd34e729b620186dc21a692",
+        "latency_ms": 3371.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 42,
+        "query_text": "在品牌的注册资本超过1亿时，给出公司的名称以及公司的总部地点品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_a1d0afe6a3df452ba992b360cdaa291f",
+        "latency_ms": 3437.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 43,
+        "query_text": "在品牌的注册资本最多1亿时，给出公司的名称以及公司的年营业额品牌的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_dfba0a0737f94f779e91a4acd513556b",
+        "latency_ms": 3416.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 44,
+        "query_text": "找到注册资本不止1亿，且年营业额不超过288亿的公司，以及给出总部地点，法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_197c2beaef074a1e91e663da62ecc8ad",
+        "latency_ms": 3256.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 45,
+        "query_text": "找出注册资本不止一亿，且年营业额低于288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1c32acb6207347b6bb6a6cbbd87d338d",
+        "latency_ms": 3389.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 46,
+        "query_text": "找出注册资本不到1亿，且年营业额少于288亿的公司，以及给出总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_686e98306cdb46e890165a404a02dd46",
+        "latency_ms": 3309.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 47,
+        "query_text": "给出注册资本不超过1亿且年营业额不少于288亿的公司，总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fe796cca1bd748d9bf5d26456a695d96",
+        "latency_ms": 3214.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 48,
+        "query_text": "给出注册资本不低于一亿，且年营业额不止288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_9316b491728349b39d0b983e83432e62",
+        "latency_ms": 3248.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 49,
+        "query_text": "给出注册资本不超过一亿，且年营业额超过288亿的公司，总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0ad13f249c81440897b493eec8f949ae",
+        "latency_ms": 3250.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 50,
+        "query_text": "给出注册资本超过一亿且年营业额不止288亿的公司，以及总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_2ee6889441a047fa92cf76dee4954968",
+        "latency_ms": 3449.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 51,
+        "query_text": "给出注册资本不超过一亿，且年营业额少于288亿的公司，以及总部地点和法人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_c022d307a9464d0d801651bf698bafdf",
+        "latency_ms": 3295.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 52,
+        "query_text": "找出注册资本少于一亿，且年营业额不超过288亿的公司，以及总部在哪，法人是谁",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f77c49f57bfb4885b4475d8f31bc7041",
+        "latency_ms": 3354.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 53,
+        "query_text": "在公司品牌历年收入的利润最多500亿时，给出公司的名称品牌的名称并给出公司品牌历年收入的营收",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f7f3fc7874a940fe9b03bc508ce0fbea",
+        "latency_ms": 3369.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 54,
+        "query_text": "在公司品牌历年收入的营收同比增长至少1时，给出公司的名称品牌的名称并给出公司品牌历年收入的营收",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_0588e5f0f8474f22a6750d721836c023",
+        "latency_ms": 3296.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 55,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司的平均营收占比最少？,并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e04e738dbcd9445c82c1b8621b25cdc4",
+        "latency_ms": 3352.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 56,
+        "query_text": "年营业额不小于288亿的公司中，哪个公司的平均营收占比最大？并给出它的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_cee216617840463a8276fd8d952dd956",
+        "latency_ms": 3280.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 57,
+        "query_text": "注册资本大于1亿的品牌中，哪个品牌历年收入的平均营收最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_42bc19fed6c447d68e3da70d342faa76",
+        "latency_ms": 3192.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 58,
+        "query_text": "注册资本不大于1亿的品牌中，哪个品牌历年收入的平均营收最大？并给出它的法定代表人",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_366c27a16b3c44178884517ae17d0bea",
+        "latency_ms": 3232.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 59,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司品牌的平均注册资本最多？并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d99e60e3662f4e6f8891b3bd949a2aa8",
+        "latency_ms": 3220.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 60,
+        "query_text": "年营业额不小于288亿的公司中，哪5个公司品牌的平均注册资本总共最少？并给出它们的总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_9ae152a2ec354d98a42edf8b2574dae4",
+        "latency_ms": 3351.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 61,
+        "query_text": "找到年营业额不少于288亿的公司及总部地点，并给出对应的公司的最高营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_8d28467360484253b5329cdbadfb6366",
+        "latency_ms": 3392.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 62,
+        "query_text": "给出年营业额少于288亿的公司及总部地点，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_93998175445e4a858cf431fef19df486",
+        "latency_ms": 3240.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 63,
+        "query_text": "给出年营业额不止288亿的公司及总部地点，并给出对应的公司的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b6c83313293945b9a7e1f0799ddb57a0",
+        "latency_ms": 3210.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 64,
+        "query_text": "找出年营业额不少于288亿的公司及总部地点，并给出对应的公司的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_1e7f8560f6e74d8c94678dc12a384bca",
+        "latency_ms": 3323.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 65,
+        "query_text": "请找出年营业额不超过288亿的公司及总部地点，并给出对应的公司的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_65695f4f3b244cd5891a55c095aa9338",
+        "latency_ms": 3295.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 66,
+        "query_text": "找到品牌的注册资本不大于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_3e546cb0c4a7456c8941d3861f8ef88b",
+        "latency_ms": 3378.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 67,
+        "query_text": "找到品牌的注册资本不小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_fd7618e72a4a47c79644d1d7e044c6f1",
+        "latency_ms": 3355.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 68,
+        "query_text": "找到品牌的注册资本小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_bb1a7c2235054155958dc13820d7cd60",
+        "latency_ms": 3403.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 69,
+        "query_text": "找到品牌的注册资本不大于1亿品牌的法定代表人并给出公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_95ebd0367bb348cdba8f6130417b8a36",
+        "latency_ms": 3414.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 70,
+        "query_text": "找到品牌的注册资本小于1亿品牌的法定代表人并给出公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d89ba732539947ee8be1aef324504ce9",
+        "latency_ms": 3313.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 71,
+        "query_text": "给出年营业额超过288亿的公司及总部地点，并给出对应的品牌中的最小注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_8cfb2d85b6e14932857c7756738b165a",
+        "latency_ms": 3362.8,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 72,
+        "query_text": "给出年营业额不超过288亿的公司及总部地点，并给出对应的品牌中的最小注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_63253d04116a44209c3d393ffa3468b9",
+        "latency_ms": 3351.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 73,
+        "query_text": "给出不超过288亿年营业额的公司及总部地点，并给出这些品牌中的平均注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f5cd766034e84ae691dda3fecdc6d297",
+        "latency_ms": 3384.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 74,
+        "query_text": "给出不超过288亿年营业额的公司及其总部地点，并给出这些品牌的的最大注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_31b5a6796e0e40109ec957d93f7317f0",
+        "latency_ms": 3641.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 75,
+        "query_text": "给出年营业额超过288亿的公司及其总部地点，并给出这些品牌的的总注册资本",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b02b73bc55f34865b5f647bd7516fd01",
+        "latency_ms": 3266.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 76,
+        "query_text": "给出年营业额不超过288亿的各公司品牌中，给出收入排名中的营收占比加起来不超过0.5的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d6abe96dc8774fc5b32d1fa0ff80172b",
+        "latency_ms": 3316.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 77,
+        "query_text": "给出年营业额低于288亿的各公司的各品牌中，给出收入排名中的总营收占比不超过0.5的公司及总部地点中",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_b8834fe20079414093cb95318761053e",
+        "latency_ms": 3333.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 78,
+        "query_text": "在年营业额不少于288亿的公司中，给出品牌不超过5个的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f7903774d2e14de28355e983fb0bb49d",
+        "latency_ms": 3479.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 79,
+        "query_text": "在年营业额不超过288亿的公司中，给出品牌少于5个的公司及其总部地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_ea5285808e684c2e81a1e6503b56decd",
+        "latency_ms": 3379.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 80,
+        "query_text": "在各公司的各品牌收入排名中，当公司的年营业额大于288亿时，给出公司各品牌收入排名数量大于5的那些公司的名称以及公司各品牌收入排名的营收占比的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6a86b6b2914b433ebdf77da6b544eca3",
+        "latency_ms": 3469.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 81,
+        "query_text": "在各公司的各品牌收入排名中，当公司的年营业额小于288亿时，给出公司各品牌收入排名的利润占比的平均值大于0.75的那些公司的名称以及公司各品牌收入排名的营收占比的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_6dc17cbc60614b249ae94a97e40f50b0",
+        "latency_ms": 4125.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 82,
+        "query_text": "在各品牌的历年收入中，当品牌的注册资本不大于1亿时，给出公司品牌历年收入的利润同比增长的总和小于等于1000000的那些品牌的名称以及公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_87040c20c2f6493d84c67f4baec7d6d2",
+        "latency_ms": 3956.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 83,
+        "query_text": "在各品牌的历年收入中，当品牌的注册资本小于1亿时，给出公司品牌历年收入数量小于5的那些品牌的名称以及公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_e83b9bf79c3b4e448d50db53d3005fd5",
+        "latency_ms": 3562.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 84,
+        "query_text": "在各品牌所属的公司中，当公司的年营业额大于288亿时，给出品牌数量小于5的那些公司的名称以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_66d81f05f51144a89e228df7c551898d",
+        "latency_ms": 3452.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 85,
+        "query_text": "在各品牌所属的公司中，当公司的年营业额小于288亿时，给出品牌数量大于等于5的那些公司的名称以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4f8f3f270d7241089a0f8be211bf685f",
+        "latency_ms": 3391.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 86,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的最大营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_906751f78cc74e829d82412f30bb226b",
+        "latency_ms": 3279.0,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 87,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的最小营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4fc59972d1414e90867a09314f80d4b2",
+        "latency_ms": 3378.5,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 88,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的总营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_233d391c19a74e33817286c3ed531762",
+        "latency_ms": 3472.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 89,
+        "query_text": "在各公司每个品牌的收入排名中，给出每个公司,其总部地点，以及各品牌的平均营收占比",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_d3c773a2470640dca5a4993b95016c84",
+        "latency_ms": 3422.3,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 90,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5b0ce5ad84d645a7814c0d54ebe03345",
+        "latency_ms": 3338.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 91,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_f791e70336c64bceb2fd66cd7dab525a",
+        "latency_ms": 3359.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 92,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_7a940a5db3dd46bda4e418e585c5ac25",
+        "latency_ms": 3385.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 93,
+        "query_text": "在各品牌的历年收入中，给出每个品牌的名称，品牌的法定代表人，以及公司品牌历年收入的营收的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_387300e1349d4f9e85e5def3c446b598",
+        "latency_ms": 3409.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 94,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的总和",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_5822e9d837be4fe493907c5957a439d9",
+        "latency_ms": 3364.6,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 95,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的最大值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_45ac4028e35c4dd3a9c377b0cb250fb0",
+        "latency_ms": 3364.1,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 96,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的最小值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_343d784bf8974aeca3e47277a9296f2b",
+        "latency_ms": 3378.4,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 97,
+        "query_text": "在各品牌所属的公司中，给出每个公司的名称，公司的总部地点，以及品牌的注册资本的平均值",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_4b19ce33a30f4acb944ea246df7259ee",
+        "latency_ms": 3310.2,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 98,
+        "query_text": "在各公司的各品牌收入排名种，哪些公司的品牌排名的总营收占比超过0.5，并给出总部的地点",
+        "status": "parse_fail",
+        "pred_sql": "",
+        "traceId": "supersonic_52340c809ef74a758ff9b30b6fc5471c",
+        "latency_ms": 3364.7,
+        "est_completion_tokens": 0
+      },
+      {
+        "query_idx": 99,
+        "query_text": "在各公司的各品牌收入排名中，哪些公司的品牌收入排名超过5，并给出公司的总部地点",
+        "status": "ok",
+        "pred_sql": "WITH t_62 AS (SELECT t7.headquarter_address, t5.brand_established_time, t4.company_id, t7.company_name, t7.company_established_time, t5.brand_name, t6.brand_id FROM (SELECT imp_date, company_id, brand_id, revenue_proportion, profit_proportion, expenditure_proportion FROM company_revenue) AS t4 INNER JOIN (SELECT imp_date, brand_id, brand_name, brand_established_time, company_id, legal_representative, registered_capital FROM brand) AS t5 ON t4.brand_id = t5.brand_id INNER JOIN (SELECT imp_date, year_time, brand_id, revenue, profit, revenue_growth_year_on_year, profit_growth_year_on_year FROM company_brand_revenue) AS t6 ON t5.brand_id = t6.brand_id INNER JOIN (SELECT imp_date, company_id, company_name, headquarter_address, company_established_time, founder, ceo, annual_turnover, employee_count FROM company) AS t7 ON t5.company_id = t7.company_id) SELECT brand_name, brand_id, company_name, company_id, brand_established_time, company_established_time, headquarter_address FROM t_62 LIMIT 500 OFFSET 0",
+        "traceId": "supersonic_58282d9d551b4a25a122b8b801b7dad4",
+        "latency_ms": 3392.8,
+        "est_completion_tokens": 252
+      }
+    ]
+  ]
+}
