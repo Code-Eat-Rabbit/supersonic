@@ -2,24 +2,23 @@
 
 规格参考：2026-07-16-python-sdk-design.md § 异常树
 """
-import pytest
 
 from supersonic.exceptions import (
-    SupersonicError,
-    AuthenticationError,
-    ValidationError,
-    FieldError,
-    RateLimitError,
-    ServerError,
-    ConnectionError as SupersonicConnectionError,
     AsyncNotEnabledError,
-    ResourceNotFoundError,
-    DomainNotFoundError,
-    ModelNotFoundError,
-    DimensionNotFoundError,
-    MetricNotFoundError,
-    DatasetNotFoundError,
     DatabaseNotFoundError,
+    DatasetNotFoundError,
+    DimensionNotFoundError,
+    DomainNotFoundError,
+    FieldError,
+    MetricNotFoundError,
+    ModelNotFoundError,
+    RateLimitError,
+    ResourceNotFoundError,
+    SupersonicError,
+    ValidationError,
+)
+from supersonic.exceptions import (
+    ConnectionError as SupersonicConnectionError,
 )
 
 

@@ -16,7 +16,7 @@ class SupersonicError(Exception):
         message: str,
         *,
         status_code: int | None = None,
-        response_body: dict | None = None,
+        response_body: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(message)
         self.message = message
@@ -43,7 +43,7 @@ class ValidationError(SupersonicError):
         message: str,
         *,
         status_code: int = 400,
-        response_body: dict | None = None,
+        response_body: dict[str, Any] | None = None,
         field_errors: list[FieldError] | None = None,
     ) -> None:
         super().__init__(message, status_code=status_code, response_body=response_body)
@@ -54,7 +54,7 @@ class AuthenticationError(SupersonicError):
     """401 错误，token 失效或缺失。"""
 
     def __init__(self, message: str = "Authentication failed", *,
-                 status_code: int = 401, response_body: dict | None = None) -> None:
+                 status_code: int = 401, response_body: dict[str, Any] | None = None) -> None:
         super().__init__(message, status_code=status_code, response_body=response_body)
 
 
@@ -66,7 +66,7 @@ class RateLimitError(SupersonicError):
         message: str = "Rate limit exceeded",
         *,
         status_code: int = 429,
-        response_body: dict | None = None,
+        response_body: dict[str, Any] | None = None,
         retry_after: int | None = None,
     ) -> None:
         super().__init__(message, status_code=status_code, response_body=response_body)
