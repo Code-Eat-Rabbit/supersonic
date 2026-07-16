@@ -67,7 +67,7 @@ class RateLimitError(SupersonicError):
         *,
         status_code: int = 429,
         response_body: dict[str, Any] | None = None,
-        retry_after: int | None = None,
+        retry_after: float | None = None,
     ) -> None:
         super().__init__(message, status_code=status_code, response_body=response_body)
         self.retry_after = retry_after
