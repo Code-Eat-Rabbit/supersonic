@@ -107,6 +107,7 @@ python-sdk/
 │   │
 │   ├── api/                          # 业务资源（每个资源一个文件）
 │   │   ├── __init__.py
+│   │   ├── paths.py                  # 端点路径常量集中定义（避免散落字符串）
 │   │   ├── query.py                  # QueryAPI（5 方法）
 │   │   ├── domains.py                # DomainsAPI（5 方法）
 │   │   ├── models.py                 # ModelsAPI（5 方法）
@@ -189,12 +190,12 @@ client = SupersonicClient(
     app_key="supersonic",       # 默认 "supersonic"
     timeout=30.0,
     enable_async=False,         # opt-in async
-    max_retries=3,
+    retry=RetryConfig(max_retries=3, retry_delay=1.0),  # 可选，默认值见 RetryConfig
 )
 
 # 2. 从环境变量（CI/脚本场景）
 client = SupersonicClient.from_env()
-# 读 SUPERSONIC_HOST / SUPERSONIC_TOKEN / SUPERSONIC_APP_KEY
+# 读 SUPERSONIC_HOST / SUPERSONIC_TOKEN / SUPERSONIC_APP_KEY / SUPERSONIC_TIMEOUT 等
 
 # 3. 从配置对象 + 覆盖
 config = SupersonicConfig.from_env(timeout=60.0, enable_async=True)
@@ -246,7 +247,7 @@ class MetricsAPI:
 
 **资源类约束**：
 - **不持有 host/token**——只持有注入的 HTTP client
-- 每个业务方法都有 `a`-前缀 async 版（用 `async_http`，若为 None 则 raise RuntimeError）
+- 每个业务方法都有 `a`-前缀 async 版（用 `async_http`，若为 None 则 raise `AsyncNotEnabledError`）
 - 分页用模块级 `_paginate` helper（在 `common/pagination.py`），不在类内重复
 - 调用 HTTP 时显式传 `resource_type="metric"` 和 `resource_id=metric_id`，让 HTTP 层能抛出正确的资源特化异常
 
@@ -280,15 +281,41 @@ class TokenAuth:
 
 ### HTTP 层与异常映射
 
+#### 重试与退避参数
+
+所有重试相关参数集中在 `SupersonicConfig`，可通过构造函数或环境变量覆盖：
+
+```python
+@dataclass
+class RetryConfig:
+    max_retries: int = 3                          # 最大重试次数（不含首次）
+    retry_delay: float = 1.0                      # 基础退避秒数
+    max_backoff: float = 30.0                     # 退避上限（避免 attempt=5 时退到 32s）
+    backoff_jitter: bool = True                   # 添加 0-1s 随机抖动，避免惊群
+    retryable_status_codes: frozenset[int] = frozenset({429, 500, 502, 503, 504})
+    respect_retry_after: bool = True              # 优先尊重服务器 Retry-After header
+
+def _compute_backoff(attempt: int, config: RetryConfig,
+                     retry_after: float | None = None) -> float:
+    """指数退避 + 可选 jitter + Retry-After 优先。"""
+    if config.respect_retry_after and retry_after is not None:
+        return min(retry_after, config.max_backoff)
+    delay = config.retry_delay * (2 ** attempt)
+    if config.backoff_jitter:
+        delay += random.uniform(0, 1.0)
+    return min(delay, config.max_backoff)
+```
+
 #### HTTPClient（位于 `common/http.py`）
 
 ```python
 class HTTPClient:
     def __init__(self, base_url: str, auth: TokenAuth, *,
-                 timeout: float = 30.0, max_retries: int = 3):
+                 timeout: float = 30.0,
+                 retry: RetryConfig | None = None):
         self._client = httpx.Client(base_url=base_url, timeout=timeout, ...)
         self._auth = auth
-        self._max_retries = max_retries
+        self._retry = retry or RetryConfig()
 
     def request(self, method: str, path: str, *,
                 json: dict | None = None,
@@ -297,31 +324,110 @@ class HTTPClient:
                 resource_type: str | None = None,
                 resource_id: int | str | None = None) -> dict:
         url = path.format(**(path_params or {}))
-        for attempt in range(self._max_retries + 1):
-            resp = self._client.request(method, url, json=json, params=params,
-                                         headers=self._auth.headers())
-            if resp.status_code in RETRYABLE_STATUS_CODES:
-                self._sleep_backoff(attempt, resp)  # 指数退避 / Retry-After
+        last_exc: Exception | None = None
+        for attempt in range(self._retry.max_retries + 1):
+            try:
+                resp = self._client.request(method, url, json=json, params=params,
+                                             headers=self._auth.headers())
+            except httpx.TransportError as e:
+                last_exc = e
+                if attempt < self._retry.max_retries:
+                    time.sleep(_compute_backoff(attempt, self._retry))
+                    continue
+                raise ConnectionError(f"Transport error: {e}") from e
+
+            if resp.status_code in self._retry.retryable_status_codes and \
+               attempt < self._retry.max_retries:
+                retry_after = _parse_retry_after(resp) if resp.status_code == 429 else None
+                time.sleep(_compute_backoff(attempt, self._retry, retry_after))
                 continue
-            return self._handle_response(resp, path=path,
-                                          resource_type=resource_type,
-                                          resource_id=resource_id)
-        raise ServerError(f"Max retries exceeded for {method} {url}")
+            return _handle_response(resp, path=path,
+                                     resource_type=resource_type,
+                                     resource_id=resource_id)
+        raise ServerError(f"Max retries exceeded for {method} {url}") from last_exc
+
+    def close(self) -> None:
+        self._client.close()
 ```
 
-- **可重试状态码**：`{429, 500, 502, 503, 504}`（对标 ai-sdk）
-- **退避策略**：`retry_delay * (2 ** attempt)`，或尊重 `Retry-After` header
-- 流式不重试（v0.1 不涉及流式）
+#### AsyncHTTPClient（位于 `common/http.py`）
+
+**与 HTTPClient 共享**：`_handle_response` / `_compute_backoff` / `_parse_retry_after`（模块级函数，sync/async 通用）。
+**差异**：用 `httpx.AsyncClient`（懒加载，避免在 `__init__` 里绑定事件循环）。
+
+```python
+class AsyncHTTPClient:
+    def __init__(self, base_url: str, auth: TokenAuth, *,
+                 timeout: float = 30.0,
+                 retry: RetryConfig | None = None):
+        # 不在 __init__ 创建 AsyncClient，避免事件循环绑定问题（对标 ai-sdk）
+        self._base_url = base_url
+        self._auth = auth
+        self._timeout = timeout
+        self._retry = retry or RetryConfig()
+        self._async_client: httpx.AsyncClient | None = None
+
+    @property
+    def _client(self) -> httpx.AsyncClient:
+        """懒加载：首次调用时才创建 AsyncClient。"""
+        if self._async_client is None:
+            self._async_client = httpx.AsyncClient(
+                base_url=self._base_url, timeout=self._timeout, ...
+            )
+        return self._async_client
+
+    async def request(self, method: str, path: str, *,
+                      json: dict | None = None,
+                      params: dict | None = None,
+                      path_params: dict | None = None,
+                      resource_type: str | None = None,
+                      resource_id: int | str | None = None) -> dict:
+        url = path.format(**(path_params or {}))
+        last_exc: Exception | None = None
+        for attempt in range(self._retry.max_retries + 1):
+            try:
+                resp = await self._client.request(method, url, json=json, params=params,
+                                                   headers=self._auth.headers())
+            except httpx.TransportError as e:
+                last_exc = e
+                if attempt < self._retry.max_retries:
+                    await asyncio.sleep(_compute_backoff(attempt, self._retry))
+                    continue
+                raise ConnectionError(f"Transport error: {e}") from e
+
+            if resp.status_code in self._retry.retryable_status_codes and \
+               attempt < self._retry.max_retries:
+                retry_after = _parse_retry_after(resp) if resp.status_code == 429 else None
+                await asyncio.sleep(_compute_backoff(attempt, self._retry, retry_after))
+                continue
+            # 复用 sync 版 _handle_response（resp 是 httpx.Response，接口一致）
+            return _handle_response(resp, path=path,
+                                     resource_type=resource_type,
+                                     resource_id=resource_id)
+        raise ServerError(f"Max retries exceeded for {method} {url}") from last_exc
+
+    async def aclose(self) -> None:
+        if self._async_client is not None:
+            await self._async_client.aclose()
+```
+
+**关键设计**：
+- `_handle_response` 是模块级函数（非方法），sync/async 都能调用——`httpx.Response` 接口一致，不需要 await `resp.json()`
+- 重试逻辑结构相同，只是 `time.sleep` ↔ `asyncio.sleep`
+- AsyncClient 懒加载，避免在 `SupersonicClient.__init__` 阶段绑定到错误的事件循环
+- `aclose()` 仅在 AsyncClient 实际创建后才调用 `.aclose()`
 
 #### 异常树（位于 `exceptions.py`）
 
 ```
-SupersonicError                    # 根
+SupersonicError                    # 根（带 status_code/message/response_body）
 ├── AuthenticationError            # 401（token 失效）
-├── ValidationError                # 400（参数校验失败）
+├── ValidationError                # 400（携带字段级错误详情）
+│   └── .field_errors: list[FieldError]
 ├── RateLimitError                 # 429（带 .retry_after）
 ├── ServerError                    # 5xx
-├── ConnectionError                # 网络层
+├── ConnectionError                # 网络层（httpx.TransportError 包装）
+├── AsyncNotEnabledError           # 调用 async 方法但未 enable_async=True
 └── ResourceNotFoundError          # 404 的基类
     ├── DomainNotFoundError
     ├── ModelNotFoundError
@@ -329,6 +435,49 @@ SupersonicError                    # 根
     ├── MetricNotFoundError
     ├── DatasetNotFoundError
     └── DatabaseNotFoundError
+```
+
+**异常类签名**：
+
+```python
+class SupersonicError(Exception):
+    def __init__(self, message: str, *, status_code: int | None = None,
+                 response_body: dict | None = None):
+        super().__init__(message)
+        self.message = message
+        self.status_code = status_code
+        self.response_body = response_body
+
+class FieldError(BaseModel):
+    field: str                          # 出错字段名
+    message: str                        # 错误描述
+    rejected_value: Any | None = None   # 被拒绝的值（可选）
+
+class ValidationError(SupersonicError):
+    def __init__(self, message: str, *,
+                 status_code: int = 400,
+                 response_body: dict | None = None,
+                 field_errors: list[FieldError] | None = None):
+        super().__init__(message, status_code=status_code,
+                         response_body=response_body)
+        self.field_errors = field_errors or []
+
+class ResourceNotFoundError(SupersonicError):
+    def __init__(self, resource_type: str, resource_id: int | str):
+        super().__init__(
+            f"{resource_type} {resource_id} not found",
+            status_code=404,
+        )
+        self.resource_type = resource_type
+        self.resource_id = resource_id
+
+class AsyncNotEnabledError(SupersonicError):
+    """调用 .alist()/.acreate() 等异步方法但未启用 enable_async=True。"""
+    def __init__(self):
+        super().__init__(
+            "Async methods require enable_async=True. "
+            "Recreate SupersonicClient with enable_async=True to use async API."
+        )
 ```
 
 #### 异常映射（集中在 `common/http.py` 的 `_handle_response`）
@@ -348,16 +497,57 @@ def _handle_response(resp: httpx.Response, *, path: str,
                      resource_id: int | str | None = None) -> dict:
     if 200 <= resp.status_code < 300:
         return resp.json() if resp.content else {}
+
+    # 尝试解析响应体，失败也给用户原始文本
+    try:
+        body = resp.json()
+    except Exception:
+        body = {"raw": resp.text}
+
     if resp.status_code == 401:
-        raise AuthenticationError(...)
+        raise AuthenticationError(
+            "Authentication failed (token invalid or expired)",
+            status_code=401, response_body=body,
+        )
     if resp.status_code == 404:
         exc_cls = _NOT_FOUND_MAP.get(resource_type, ResourceNotFoundError)
-        raise exc_cls(resource_id=resource_id, ...)
+        if exc_cls is ResourceNotFoundError:
+            raise ResourceNotFoundError(resource_type or "resource", resource_id or "")
+        raise exc_cls(resource_id=resource_id)
     if resp.status_code == 429:
-        raise RateLimitError(retry_after=_parse_retry_after(resp))
+        raise RateLimitError(
+            "Rate limit exceeded",
+            status_code=429, response_body=body,
+            retry_after=_parse_retry_after(resp),
+        )
     if 400 <= resp.status_code < 500:
-        raise ValidationError(...)
-    raise ServerError(...)
+        # 解析 SuperSonic 返回的字段级错误
+        field_errors = _parse_field_errors(body)
+        raise ValidationError(
+            f"Request validation failed: {body.get('message', resp.reason_phrase)}",
+            status_code=resp.status_code,
+            response_body=body,
+            field_errors=field_errors,
+        )
+    raise ServerError(
+        f"Server error: {body.get('message', resp.reason_phrase)}",
+        status_code=resp.status_code, response_body=body,
+    )
+
+def _parse_field_errors(body: dict) -> list[FieldError]:
+    """从 SuperSonic 400 响应体解析字段级错误。
+
+    支持多种格式（实际格式待集成测试确认）：
+    - {"errors": [{"field": "name", "message": "不能为空"}]}
+    - {"fieldErrors": {...}}
+    - {"message": "name 不能为空"}  # 整体错误，无法结构化
+    """
+    errors = body.get("errors") or body.get("fieldErrors") or []
+    if isinstance(errors, dict):
+        return [FieldError(field=k, message=str(v)) for k, v in errors.items()]
+    if isinstance(errors, list):
+        return [FieldError(**e) for e in errors if isinstance(e, dict)]
+    return []
 ```
 
 ---
@@ -518,17 +708,86 @@ class CacheConfig(BaseModel):
 
 6 个元数据资源类遵循统一模式（list/get/create/update/delete 五件套 + 资源特有方法）。查询命名空间（QueryAPI）是独立的查询方法集，不遵循 CRUD 模式。
 
-#### 完整 API 一览
+#### 完整 API 与端点路径映射
 
-| 资源类 | 方法 | 路径 |
+SuperSonic 端点为**驼峰式命名**（非 RESTful），路径需在 SDK 内集中管理。下表为 v0.1 全部端点（路径模板中 `{id}` 为路径参数）：
+
+##### 查询命名空间
+
+| 资源.方法 | HTTP | 路径 |
 |---|---|---|
-| `client.query` | `sql` / `sqls` / `validate` / `metric` / `chat` | `/api/semantic/query/*` |
-| `client.domains` | `list` / `get` / `create` / `update` / `delete` | `/api/semantic/domain/*` |
-| `client.models` | `list` / `get` / `create` / `update` / `delete` | `/api/semantic/model/*` |
-| `client.dimensions` | `list` / `get` / `create` / `update` / `delete` / `query_values` | `/api/semantic/dimension/*` |
-| `client.metrics` | `list` / `get` / `create` / `update` / `delete` / `publish` / `unpublish` | `/api/semantic/metric/*` |
-| `client.databases` | `list` / `get` / `create` / `update` / `test_connect` / `get_tables` / `get_columns` | `/api/semantic/database/*` |
-| `client.datasets` | `list` / `get` | `/api/semantic/dataSet/*` |
+| `client.query.sql` | POST | `/api/semantic/query/sql` |
+| `client.query.sqls` | POST | `/api/semantic/query/sqls` |
+| `client.query.validate` | POST | `/api/semantic/query/validate` |
+| `client.query.metric` | POST | `/api/semantic/query/metric` |
+| `client.query.chat` | POST | `/api/semantic/query/chat` |
+
+##### 元数据 CRUD 命名空间
+
+| 资源.方法 | HTTP | 路径 |
+|---|---|---|
+| `client.domains.list` | GET | `/api/semantic/domain/getDomainList` |
+| `client.domains.get` | GET | `/api/semantic/domain/getDomain/{id}` |
+| `client.domains.create` | POST | `/api/semantic/domain/createDomain` |
+| `client.domains.update` | POST | `/api/semantic/domain/updateDomain` |
+| `client.domains.delete` | DELETE | `/api/semantic/domain/deleteDomain/{domainId}` |
+| `client.models.list` | GET | `/api/semantic/model/getModelList/{domainId}` |
+| `client.models.get` | GET | `/api/semantic/model/getModel/{id}` |
+| `client.models.create` | POST | `/api/semantic/model/createModel` |
+| `client.models.update` | POST | `/api/semantic/model/updateModel` |
+| `client.models.delete` | DELETE | `/api/semantic/model/deleteModel/{modelId}` |
+| `client.dimensions.list` | GET | `/api/semantic/dimension/getDimensionList/{modelId}` |
+| `client.dimensions.get` | GET | `/api/semantic/dimension/getDimension/{id}` |
+| `client.dimensions.create` | POST | `/api/semantic/dimension/createDimension` |
+| `client.dimensions.update` | POST | `/api/semantic/dimension/updateDimension` |
+| `client.dimensions.delete` | DELETE | `/api/semantic/dimension/deleteDimension/{id}` |
+| `client.dimensions.query_values` | POST | `/api/semantic/dimension/queryDimValue` |
+| `client.metrics.list` | POST | `/api/semantic/metric/queryMetric` |
+| `client.metrics.get` | GET | `/api/semantic/metric/getMetric/{id}` |
+| `client.metrics.create` | POST | `/api/semantic/metric/createMetric` |
+| `client.metrics.update` | POST | `/api/semantic/metric/updateMetric` |
+| `client.metrics.delete` | DELETE | `/api/semantic/metric/deleteMetric/{id}` |
+| `client.metrics.publish` | POST | `/api/semantic/metric/batchPublish` |
+| `client.metrics.unpublish` | POST | `/api/semantic/metric/batchUnPublish` |
+| `client.databases.list` | GET | `/api/semantic/database/getDatabaseList` |
+| `client.databases.get` | GET | `/api/semantic/database/getDatabase/{id}` |
+| `client.databases.create` | POST | `/api/semantic/database/createOrUpdateDatabase` |
+| `client.databases.update` | POST | `/api/semantic/database/createOrUpdateDatabase` |
+| `client.databases.test_connect` | POST | `/api/semantic/database/testConnect` |
+| `client.databases.get_tables` | GET | `/api/semantic/database/getTables` |
+| `client.databases.get_columns` | GET | `/api/semantic/database/getColumnsByName` |
+| `client.datasets.list` | GET | `/api/semantic/dataSet/getDataSetList` |
+| `client.datasets.get` | GET | `/api/semantic/dataSet/getDataSet/{id}` |
+
+##### 端点常量集中管理
+
+所有路径模板在 `api/paths.py` 定义为常量，资源类引用常量而非散落字符串：
+
+```python
+# api/paths.py
+class QueryPaths:
+    SQL = "/api/semantic/query/sql"
+    SQLS = "/api/semantic/query/sqls"
+    VALIDATE = "/api/semantic/query/validate"
+    METRIC = "/api/semantic/query/metric"
+    CHAT = "/api/semantic/query/chat"
+
+class MetricPaths:
+    LIST = "/api/semantic/metric/queryMetric"
+    GET = "/api/semantic/metric/getMetric/{id}"
+    CREATE = "/api/semantic/metric/createMetric"
+    UPDATE = "/api/semantic/metric/updateMetric"
+    DELETE = "/api/semantic/metric/deleteMetric/{id}"
+    PUBLISH = "/api/semantic/metric/batchPublish"
+    UNPUBLISH = "/api/semantic/metric/batchUnPublish"
+
+# ... 其他资源类同理
+```
+
+**优势**：
+- 端点路径变更只改一处，不再散落在 7 个 API 文件
+- 测试可与源码共享常量（`from supersonic.api.paths import MetricPaths`），避免硬编码 URL
+- SuperSonic 升级导致端点变更时可集中审计
 
 #### 使用示例（以 Metric 为例）
 
@@ -563,10 +822,10 @@ client.metrics.delete(metric.id)
 
 #### 分页处理（`common/pagination.py`）
 
-模块级泛型 helper，资源类直接复用：
+`Page[T]` 是泛型容器，自带 `from_response` classmethod 直接消费 SuperSonic 的 `PageInfo` 响应；资源类不再需要传 `mapper` 函数。
 
 ```python
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 class Page(BaseModel, Generic[T]):
     items: list[T]
@@ -574,15 +833,43 @@ class Page(BaseModel, Generic[T]):
     page: int
     page_size: int
 
-def _paginate(
-    http: HTTPClient,
-    path: str,
-    *,
-    mapper: Callable[[dict], T],
-    page: int = 1,
-    page_size: int = 10,
-    extra_params: dict | None = None,
-) -> Page[T]: ...
+    @classmethod
+    def from_response(
+        cls,
+        data: dict,
+        item_model: type[T],
+        *,
+        items_key: str = "list",       # SuperSonic PageInfo.list
+        total_key: str = "total",
+        page_key: str = "pageNum",
+        page_size_key: str = "pageSize",
+    ) -> "Page[T]":
+        """从 SuperSonic PageInfo 响应构造 Page。
+
+        自动用 pydantic 的 model_validate 做类型转换与校验，
+        无需调用方传 mapper 函数。
+        """
+        return cls(
+            items=[item_model.model_validate(item) for item in data.get(items_key, [])],
+            total=data.get(total_key, 0),
+            page=data.get(page_key, 1),
+            page_size=data.get(page_size_key, 10),
+        )
+
+# 资源类用法（极简）：
+def list(self, *, page: int = 1, page_size: int = 10,
+         model_id: int | None = None) -> Page[Metric]:
+    body = self._http.request(
+        "POST", MetricPaths.LIST,
+        params={"page": page, "pageSize": page_size, "modelId": model_id},
+        resource_type="metric",
+    )
+    return Page[Metric].from_response(body, item_model=Metric)
+
+# async 版同理
+async def alist(self, ...) -> Page[Metric]:
+    body = await self._async_http.request("POST", MetricPaths.LIST, ...)
+    return Page[Metric].from_response(body, item_model=Metric)
 ```
 
 ---
@@ -664,6 +951,225 @@ markers = [
 addopts = "-m 'not integration'"  # 默认跳过集成测试
 ```
 
+**端点路径 fixture（避免测试中硬编码 URL）**：
+
+```python
+# tests/conftest.py
+import pytest
+from supersonic.api.paths import MetricPaths, QueryPaths, ...
+
+@pytest.fixture
+def metric_paths():
+    return MetricPaths
+
+@pytest.fixture
+def base_url():
+    return "http://test"
+
+# 测试用法
+def test_create_returns_metric(client, httpx_mock, sample_metric_dict, metric_paths, base_url):
+    httpx_mock.add_response(url=f"{base_url}{metric_paths.CREATE}", json=sample_metric_dict)
+    metric = client.metrics.create(MetricCreateReq(...))
+    assert isinstance(metric, Metric)
+```
+
+源码与测试共享 `paths.py` 常量，端点变更只改一处。
+
+---
+
+### 配置与运行时细节
+
+#### pyproject.toml 完整草稿
+
+```toml
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "supersonic-sdk"
+version = "0.1.0"
+description = "Python SDK for SuperSonic Chat BI + Headless BI platform"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "SuperSonic Team" }]
+keywords = ["supersonic", "chat-bi", "headless-bi", "text2sql", "semantic-layer"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+pandas = ["pandas>=2.0.0"]
+cli = ["click>=8.1.0", "rich>=13.0.0"]   # Phase 2 启用
+mcp = ["mcp>=0.9.0"]                      # Phase 3 启用
+dev = [
+    "pytest>=7.0",
+    "pytest-asyncio>=0.21",
+    "pytest-httpx>=0.30",
+    "pytest-cov>=4.0",
+    "ruff>=0.8.0",
+    "mypy>=1.0",
+]
+all = ["supersonic-sdk[pandas,dev]"]      # 不含 cli/mcp（未实现）
+
+[project.urls]
+Homepage = "https://github.com/tencentmusic/supersonic"
+Repository = "https://github.com/tencentmusic/supersonic"
+Documentation = "https://github.com/tencentmusic/supersonic/tree/main/python-sdk"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/supersonic"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "RUF"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: requires real SuperSonic instance (skipped by default)",
+]
+addopts = "-m 'not integration' --cov=src/supersonic --cov-report=term-missing"
+```
+
+**关键设计**：
+- 核心包仅 2 个运行时依赖（httpx + pydantic）
+- `[pandas]` 是用户可选；`[cli]`/`[mcp]` 在 Phase 2/3 实施时添加
+- `[dev]` 包含完整开发工具链（pytest/httpx mock/ruff/mypy）
+- `[all]` 不含未实现的 cli/mcp，避免安装空 extras
+- `requires-python = ">=3.10"` 锁定 Python 版本（PEP 604 `X | None` 需要）
+
+#### 环境变量表（`from_env()` 配置源）
+
+| 变量 | 必填 | 默认值 | 说明 |
+|---|---|---|---|
+| `SUPERSONIC_HOST` | 是 | — | SuperSonic 服务地址（如 `http://localhost:9080`） |
+| `SUPERSONIC_TOKEN` | 是 | — | JWT token |
+| `SUPERSONIC_APP_KEY` | 否 | `supersonic` | App-Key header 值 |
+| `SUPERSONIC_TIMEOUT` | 否 | `30.0` | HTTP 超时（秒） |
+| `SUPERSONIC_MAX_RETRIES` | 否 | `3` | 最大重试次数 |
+| `SUPERSONIC_ENABLE_ASYNC` | 否 | `false` | 是否启用 async client |
+| `SUPERSONIC_LOG_LEVEL` | 否 | `WARNING` | 日志级别（`DEBUG`/`INFO`/`WARNING`/`ERROR`） |
+
+**缺必填变量时的行为**：`from_env()` 抛 `ValueError`，消息明确指出缺失的变量名（对标 ai-sdk 的 fail fast）。
+
+```python
+@classmethod
+def from_env(cls, **overrides) -> "SupersonicClient":
+    host = os.environ.get("SUPERSONIC_HOST")
+    token = os.environ.get("SUPERSONIC_TOKEN")
+    missing = [k for k, v in [("SUPERSONIC_HOST", host), ("SUPERSONIC_TOKEN", token)] if not v]
+    if missing:
+        raise ValueError(f"Missing required env vars: {', '.join(missing)}")
+    ...
+```
+
+#### 线程安全
+
+**`SupersonicClient` 不是线程安全的**。底层 `httpx.Client` 在并发请求时会出现连接池竞争（参见 [httpx 文档](https://www.python-httpx.org/advanced/concurrency/)）。
+
+**用户策略**（在 `SupersonicClient` docstring 中明示）：
+
+```python
+class SupersonicClient:
+    """SuperSonic Python SDK 主入口。
+
+    Thread safety:
+        SupersonicClient is NOT thread-safe. The underlying httpx.Client
+        uses a shared connection pool that does not support concurrent
+        requests across threads.
+
+        For multi-threaded usage:
+        - Create a separate SupersonicClient per thread (recommended)
+        - Or use enable_async=True with asyncio instead of threads
+        - Or wrap client access with an external lock (not recommended,
+          kills concurrency)
+
+    Async safety:
+        AsyncHTTPClient methods can be called concurrently from asyncio
+        tasks (httpx.AsyncClient supports concurrent requests within a
+        single event loop).
+    """
+```
+
+**Phase 1 不实现**：连接池封装、contextvars 自动线程隔离。这些留作 v0.2 候选特性，但 docstring 警告必须 v0.1 就有。
+
+#### 日志策略
+
+Phase 1 采用**极简日志**，不自建 logger，复用 std `logging`：
+
+```python
+# common/logging.py
+import logging
+
+_LOGGER = logging.getLogger("supersonic")
+
+def get_logger() -> logging.Logger:
+    return _LOGGER
+
+def configure_logging(level: str | int = "WARNING") -> None:
+    """配置 supersonic 命名空间的日志级别。
+
+    可通过 SUPERSONIC_LOG_LEVEL 环境变量在 from_env() 时自动调用，
+    或用户显式调用 supersonic.configure_logging("DEBUG")。
+    """
+    logging.basicConfig(level=level)  # 用户也可自行配置 handler
+    _LOGGER.setLevel(level)
+
+# 在 HTTPClient 中：
+class HTTPClient:
+    def request(self, method, path, *, ...):
+        log = get_logger()
+        log.debug("HTTP %s %s payload=%s", method, path, json)
+        ...
+        log.debug("HTTP response status=%s body=%s", resp.status_code, body)
+```
+
+**日志约定**：
+- 级别：HTTP 请求/响应 → `DEBUG`；连接/重试 → `INFO`；认证失败 → `WARNING`
+- 命名空间：`supersonic`（顶级）、`supersonic.http`（HTTP 层）、`supersonic.api.metric`（资源层）
+- **不记录敏感信息**：`Authorization` header 始终打码（`Authorization: Bearer ***`）；请求体中的 token 同理
+- Phase 1 不实现：X-Request-ID 追踪、结构化日志（JSON）—— 留作 v0.2
+
+#### 与 SuperSonic 版本兼容性
+
+**Phase 1 策略（best-effort）**：
+- SDK v0.1 兼容 SuperSonic ≥ 1.1.0（基于当前 master 分支的 API 形态）
+- 不主动版本协商，依赖端点路径与 DTO 字段稳定
+- README 中明示兼容版本范围
+
+**未来扩展**（Phase 2+）：
+- 新增 `client.get_server_version()` 方法（调 SuperSonic `/api/semantic/meta/version` 或类似端点）
+- 启动时可选 strict 模式，版本不匹配 raise `IncompatibleVersionError`
+- SemVer 约定：SuperSonic major 升级 → SDK major 升级
+
+**当前已知风险**：
+- 端点路径（如 `/createMetric` vs `/metrics`）若 SuperSonic 未来重构为 RESTful，需 SDK 同步重构 `paths.py`
+- DTO 字段变更：`response_body` 在异常对象上保留，便于调试
+
 ---
 
 ### 关键示例（`examples/`）
@@ -671,17 +1177,34 @@ addopts = "-m 'not integration'"  # 默认跳过集成测试
 #### `examples/quickstart.py`
 
 ```python
-"""3 分钟上手：查询销售额"""
-from supersonic import SupersonicClient
+"""3 分钟上手：查询销售额（含基础错误处理）"""
+import sys
+from supersonic import (
+    SupersonicClient,
+    AuthenticationError,
+    MetricNotFoundError,
+    SupersonicError,
+)
+from supersonic.utils import date_range
 
-with SupersonicClient.from_env() as client:
-    result = client.query.metric(
-        metrics=["销售额"],
-        dimensions=["品类"],
-        date_info=date_range("2026-01-01", "2026-06-30"),
-    )
-    df = result.to_dataframe()
-    print(df.sort_values("销售额", ascending=False))
+try:
+    with SupersonicClient.from_env() as client:
+        result = client.query.metric(
+            metrics=["销售额"],
+            dimensions=["品类"],
+            date_info=date_range("2026-01-01", "2026-06-30"),
+        )
+        df = result.to_dataframe()  # 需 pip install supersonic-sdk[pandas]
+        print(df.sort_values("销售额", ascending=False))
+except AuthenticationError:
+    print("Token 失效，请检查 SUPERSONIC_TOKEN", file=sys.stderr)
+    sys.exit(1)
+except MetricNotFoundError as e:
+    print(f"指标不存在: {e.resource_id}", file=sys.stderr)
+    sys.exit(1)
+except SupersonicError as e:
+    print(f"查询失败: {e.message} (status={e.status_code})", file=sys.stderr)
+    sys.exit(1)
 ```
 
 #### `examples/semantic_modeling.py`
@@ -839,7 +1362,7 @@ with SupersonicClient.from_env() as client:
 - `python-sdk/src/supersonic/py.typed`
 - `python-sdk/src/supersonic/{client,auth,config,exceptions}.py`（4 个公共顶级文件）
 - `python-sdk/src/supersonic/common/{http,pagination,logging}.py`（内部基础设施）
-- `python-sdk/src/supersonic/api/{query,domains,models,dimensions,metrics,databases,datasets}.py`（7 个 API 类 = 1 查询 + 6 元数据 CRUD）
+- `python-sdk/src/supersonic/api/{paths,query,domains,models,dimensions,metrics,databases,datasets}.py`（8 个文件：1 端点常量 + 7 个 API 类）
 - `python-sdk/src/supersonic/models/{base,query,domain,model,dimension,metric,database,dataset}.py`（8 个模型文件）
 - `python-sdk/src/supersonic/utils/{builders,validators,format}.py`（3 个工具文件）
 
@@ -867,10 +1390,11 @@ with SupersonicClient.from_env() as client:
 
 ### Phase 2：CLI
 
-- `cli/` 子包，`[cli]` extra
+- **打包关系**：CLI 是 SDK 的**子包**（`python-sdk/src/supersonic/cli/`），不是独立 PyPI 包。两者共享同一个 `supersonic-sdk` distribution，CLI 走 `[cli]` extra 安装依赖
+- **依赖 SDK**：CLI 直接 import `supersonic.Client` / `supersonic.api.*` / `supersonic.utils.*`，无重复封装
 - 命令结构：`supersonic query/metric/model/domain/...`
 - 框架：`click` 或 `typer`
-- 输出：JSON / 表格双格式（复用 `utils/format.py`）
+- 输出：JSON / 表格双格式（直接复用 SDK 的 `utils/format.py`，因同包无需跨包导出）
 - 配置：环境变量 + `--config` 文件
 - Agent 友好：稳定的 stdout 格式、退出码语义
 
