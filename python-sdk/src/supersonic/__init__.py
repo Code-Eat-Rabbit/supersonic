@@ -28,6 +28,16 @@ Quick Start:
     with SupersonicClient.from_env() as client:
         result = client.query.sql("SELECT sales FROM sales_table")
         print(result.result_rows)
+
+Async Support (Phase 1):
+
+    Only QueryAPI supports async in Phase 1:
+
+        client = SupersonicClient(enable_async=True)
+        result = await client.query.asql("SELECT ...")
+
+    Metadata CRUD (domains/models/dimensions/metrics/databases/datasets)
+    are sync-only in Phase 1. Async methods are planned for v0.2.
 """
 from supersonic.auth import TokenAuth
 from supersonic.client import SupersonicClient
