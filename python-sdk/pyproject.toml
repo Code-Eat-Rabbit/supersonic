@@ -53,7 +53,7 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "RUF"]
-ignore = ["RUF002", "RUF003"]  # 允许中文中的全角标点（docstring + comments）
+ignore = ["RUF002", "RUF003", "RUF022"]  # 中文全角标点 + __all__ 按分类而非字母序
 
 [tool.mypy]
 python_version = "3.10"
