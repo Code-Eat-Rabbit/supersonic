@@ -8,8 +8,13 @@
 import pytest
 
 from supersonic.api.paths import (
-    QueryPaths, DomainPaths, ModelPaths, DimensionPaths,
-    MetricPaths, DatabasePaths, DatasetPaths,
+    DatabasePaths,
+    DatasetPaths,
+    DimensionPaths,
+    DomainPaths,
+    MetricPaths,
+    ModelPaths,
+    QueryPaths,
 )
 
 
