@@ -57,6 +57,7 @@ class DatabasePaths:
     # carries id). SDK layer splits into two methods for type clarity.
     CREATE = "/api/semantic/database/createOrUpdateDatabase"
     UPDATE = "/api/semantic/database/createOrUpdateDatabase"
+    DELETE = "/api/semantic/database/{id}"
     TEST_CONNECT = "/api/semantic/database/testConnect"
     GET_TABLES = "/api/semantic/database/getTables"
     GET_COLUMNS = "/api/semantic/database/getColumnsByName"

@@ -23,7 +23,7 @@ class TestList:
     ):
         httpx_mock.add_response(
             url=f"{base_url}{database_paths.LIST}?page=1&pageSize=10",
-            method="POST",
+            method="GET",
             json=sample_database_list_response,
         )
         page = databases_api.list(page=1, page_size=10)
@@ -105,7 +105,7 @@ class TestDelete:
         database_paths, base_url,
     ):
         httpx_mock.add_response(
-            url=f"{base_url}{database_paths.GET.format(id=1)}",
+            url=f"{base_url}{database_paths.DELETE.format(id=1)}",
             method="DELETE",
             status_code=200,
             json={},

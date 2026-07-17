@@ -36,10 +36,10 @@ class DatabasesAPI:
         page: int = 1,
         page_size: int = 10,
     ) -> Page[Database]:
-        """List databases. Does not pass resource_type (review fix #4)."""
+        """List databases. HTTP GET matches backend @GetMapping."""
         params: dict[str, Any] = {"page": page, "pageSize": page_size}
         body = self._http.request(
-            "POST", DatabasePaths.LIST,
+            "GET", DatabasePaths.LIST,
             params=params,
         )
         return Page[Database].from_response(body, item_model=Database)
@@ -79,7 +79,7 @@ class DatabasesAPI:
 
     def delete(self, database_id: int) -> None:
         self._http.request(
-            "DELETE", DatabasePaths.GET,
+            "DELETE", DatabasePaths.DELETE,
             path_params={"id": database_id},
             resource_type="database",
             resource_id=database_id,
