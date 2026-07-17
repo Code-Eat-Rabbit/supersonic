@@ -9,6 +9,7 @@ HTTPClient 与 AsyncHTTPClient 共享：
 - HTTPClient: httpx.Client，同步
 - AsyncHTTPClient: httpx.AsyncClient，懒加载（避免事件循环绑定）
 """
+import asyncio
 import time
 from typing import Any, cast
 
@@ -240,3 +241,107 @@ class HTTPClient:
 
     def __exit__(self, *args: object) -> None:
         self.close()
+
+
+class AsyncHTTPClient:
+    """异步 HTTP 客户端。
+
+    与 HTTPClient 共享 _handle_response / compute_backoff / _parse_retry_after。
+    差异：
+    - 用 httpx.AsyncClient（懒加载，避免 __init__ 绑定事件循环）
+    - time.sleep → asyncio.sleep
+    """
+
+    def __init__(
+        self,
+        base_url: str,
+        auth: TokenAuth,
+        *,
+        timeout: float = 30.0,
+        retry: RetryConfig | None = None,
+    ) -> None:
+        # 不在 __init__ 创建 AsyncClient，避免事件循环绑定问题
+        self._base_url = base_url
+        self._auth = auth
+        self._timeout = timeout
+        self._retry = retry or RetryConfig()
+        self._async_client: httpx.AsyncClient | None = None
+
+    @property
+    def _client(self) -> httpx.AsyncClient:
+        """懒加载：首次调用才创建 AsyncClient。"""
+        if self._async_client is None:
+            self._async_client = httpx.AsyncClient(
+                base_url=self._base_url, timeout=self._timeout
+            )
+        return self._async_client
+
+    async def request(
+        self,
+        method: str,
+        path: str,
+        *,
+        json: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+        path_params: dict[str, Any] | None = None,
+        resource_type: str | None = None,
+        resource_id: int | str | None = None,
+    ) -> dict[str, Any]:
+        url = path.format(**(path_params or {}))
+        last_exc: Exception | None = None
+
+        for attempt in range(self._retry.max_retries + 1):
+            headers = self._auth.headers()
+            log.debug(
+                "HTTP async %s %s headers=%s payload=%s",
+                method, url, redact_headers(headers), json,
+            )
+
+            try:
+                resp = await self._client.request(
+                    method, url, json=json, params=params, headers=headers
+                )
+            except httpx.TransportError as e:
+                last_exc = e
+                if attempt < self._retry.max_retries:
+                    await asyncio.sleep(compute_backoff(attempt, self._retry))
+                    continue
+                raise SupersonicConnectionError(f"Transport error: {e}") from e
+
+            # 评审修复（同 HTTPClient）：最后一次重试仍为可重试状态码时，
+            # 必须抛 "Max retries exceeded"，而不是走 _handle_response
+            if (
+                self._retry.max_retries > 0
+                and resp.status_code in self._retry.retryable_status_codes
+            ):
+                if attempt < self._retry.max_retries:
+                    retry_after = (
+                        _parse_retry_after(resp) if resp.status_code == 429 else None
+                    )
+                    await asyncio.sleep(compute_backoff(attempt, self._retry, retry_after))
+                    continue
+                # 最后一次 attempt 仍是可重试状态码 -> exhausted
+                try:
+                    body: dict[str, Any] = cast(dict[str, Any], resp.json())
+                except Exception:
+                    body = {"raw": resp.text}
+                raise ServerError(
+                    f"Max retries exceeded for {method} {url}: "
+                    f"{body.get('message', resp.reason_phrase)}",
+                    status_code=resp.status_code,
+                    response_body=body,
+                )
+
+            return _handle_response(
+                resp,
+                path=path,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
+
+        raise ServerError(f"Max retries exceeded for {method} {url}") from last_exc
+
+    async def aclose(self) -> None:
+        if self._async_client is not None:
+            await self._async_client.aclose()
+            self._async_client = None
