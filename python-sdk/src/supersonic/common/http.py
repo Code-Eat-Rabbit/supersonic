@@ -2,7 +2,8 @@
 
 HTTPClient 与 AsyncHTTPClient 共享：
 - _handle_response（异常映射）
-- _compute_backoff / _parse_retry_after（来自 config）
+- _compute_backoff（来自 config）
+- _parse_retry_after（本模块私有，基于 httpx.Response）
 
 差异：
 - HTTPClient: httpx.Client，同步

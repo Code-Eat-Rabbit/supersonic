@@ -39,17 +39,6 @@ def compute_backoff(
     return min(delay, config.max_backoff)
 
 
-def _parse_retry_after(resp: Any) -> float | None:
-    """从响应 Retry-After header 解析秒数。支持 delta-seconds 格式。"""
-    val = resp.headers.get("Retry-After")
-    if val is None:
-        return None
-    try:
-        return float(val)
-    except ValueError:
-        return None  # HTTP-date 格式暂不支持
-
-
 @dataclass
 class SupersonicConfig:
     """SDK 主配置。from_env() 是推荐入口。"""
