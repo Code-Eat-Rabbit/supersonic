@@ -89,6 +89,156 @@ def sample_metric_list_response():
 
 
 @pytest.fixture
+def sample_domain_dict():
+    """Single Domain response."""
+    return {
+        "id": 1,
+        "name": "电商",
+        "bizName": "ecommerce",
+        "parentDomainId": None,
+        "description": "电商业务域",
+        "status": "ONLINE",
+    }
+
+
+@pytest.fixture
+def sample_domain_list_response():
+    """Domain list paginated response."""
+    return {
+        "list": [
+            {"id": 1, "name": "电商", "bizName": "ecommerce"},
+            {"id": 2, "name": "供应链", "bizName": "supply_chain"},
+        ],
+        "total": 10,
+        "pageNum": 1,
+        "pageSize": 10,
+    }
+
+
+@pytest.fixture
+def sample_model_dict():
+    """Single Model response."""
+    return {
+        "id": 1,
+        "name": "订单模型",
+        "bizName": "order_model",
+        "domainId": 1,
+        "databaseId": 5,
+        "tableName": "orders",
+        "description": "订单业务模型",
+        "status": "ONLINE",
+    }
+
+
+@pytest.fixture
+def sample_model_list_response():
+    """Model list paginated response."""
+    return {
+        "list": [
+            {"id": 1, "name": "订单模型", "bizName": "order_model", "domainId": 1,
+             "databaseId": 5},
+            {"id": 2, "name": "商品模型", "bizName": "product_model", "domainId": 1,
+             "databaseId": 5},
+        ],
+        "total": 20,
+        "pageNum": 1,
+        "pageSize": 10,
+    }
+
+
+@pytest.fixture
+def sample_dimension_dict():
+    """Single Dimension response."""
+    return {
+        "id": 1,
+        "name": "品类",
+        "bizName": "category",
+        "modelId": 10,
+        "type": "VARCHAR",
+        "expr": "category",
+        "description": "商品品类",
+        "status": "ONLINE",
+    }
+
+
+@pytest.fixture
+def sample_dimension_list_response():
+    """Dimension list paginated response."""
+    return {
+        "list": [
+            {"id": 1, "name": "品类", "bizName": "category", "modelId": 10,
+             "type": "VARCHAR"},
+            {"id": 2, "name": "地区", "bizName": "region", "modelId": 10,
+             "type": "VARCHAR"},
+        ],
+        "total": 30,
+        "pageNum": 1,
+        "pageSize": 10,
+    }
+
+
+@pytest.fixture
+def sample_database_dict():
+    """Single Database response."""
+    return {
+        "id": 1,
+        "name": "demo_mysql",
+        "type": "mysql",
+        "host": "localhost",
+        "port": 3306,
+        "username": "root",
+        "password": "***",
+        "database": "demo",
+        "version": "8.0",
+        "description": "Demo MySQL database",
+    }
+
+
+@pytest.fixture
+def sample_database_list_response():
+    """Database list paginated response."""
+    return {
+        "list": [
+            {"id": 1, "name": "demo_mysql", "type": "mysql"},
+            {"id": 2, "name": "analytics_ck", "type": "clickhouse"},
+        ],
+        "total": 5,
+        "pageNum": 1,
+        "pageSize": 10,
+    }
+
+
+@pytest.fixture
+def sample_dataset_dict():
+    """Single Dataset response."""
+    return {
+        "id": 1,
+        "name": "电商数据集",
+        "bizName": "ecommerce_dataset",
+        "domainId": 1,
+        "modelIds": [10, 11],
+        "description": "电商综合数据集",
+        "status": "ONLINE",
+    }
+
+
+@pytest.fixture
+def sample_dataset_list_response():
+    """Dataset list paginated response."""
+    return {
+        "list": [
+            {"id": 1, "name": "电商数据集", "bizName": "ecommerce_dataset",
+             "domainId": 1, "modelIds": [10, 11]},
+            {"id": 2, "name": "供应链数据集", "bizName": "supply_chain_dataset",
+             "domainId": 2, "modelIds": [20]},
+        ],
+        "total": 8,
+        "pageNum": 1,
+        "pageSize": 10,
+    }
+
+
+@pytest.fixture
 def sample_query_result_dict():
     """QueryResult response."""
     return {
