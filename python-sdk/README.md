@@ -57,6 +57,78 @@ Environment variables (read by `SupersonicClient.from_env()`):
 `SupersonicClient` is NOT thread-safe. Create one per thread, or use
 `enable_async=True` with asyncio.
 
+## CLI
+
+The `supersonic` command-line tool provides bash access to all SDK capabilities.
+Install with the `[cli]` extra:
+
+```bash
+pip install supersonic-sdk[cli]
+```
+
+### Quick Start
+
+```bash
+# Set credentials (or use --config FILE)
+export SUPERSONIC_HOST=http://localhost:9080
+export SUPERSONIC_TOKEN=your-jwt-token
+
+# List metrics
+supersonic metric list --model-id 10
+
+# Query
+supersonic query sql "SELECT 销售额 FROM 销售表"
+supersonic query chat --text "top 5 products by sales"
+
+# JSON output for scripting
+supersonic --json metric list | jq '.items[].name'
+
+# Show version
+supersonic version
+```
+
+### Configuration Priority
+
+Config is resolved in this order (highest first):
+
+1. CLI flags (`--host`, `--token`, ...)
+2. Environment variables (`SUPERSONIC_HOST`, `SUPERSONIC_TOKEN`, ...)
+3. `--config FILE` (TOML format)
+4. `--env-file FILE` (dotenv format)
+5. `~/.supersonic/config.toml` (default path if exists)
+6. Built-in defaults
+
+### Exit Codes
+
+| Code | Meaning |
+|---|---|
+| 0 | Success |
+| 1 | Generic client error |
+| 2 | Authentication error (401) |
+| 3 | Resource not found (404) |
+| 4 | Validation error (400) |
+| 5 | Server error (5xx) or connection error |
+
+### TOML Config Example
+
+```toml
+# ~/.supersonic/config.toml
+host = "http://localhost:9080"
+token = "your-jwt-token"
+app_key = "supersonic"
+
+[retry]
+max_retries = 5
+```
+
+### Shell Completion
+
+```bash
+supersonic --install-completion bash  # or zsh/fish
+```
+
+See [CLI design spec](../docs/superpowers/specs/2026-07-17-python-sdk-cli-design.md) for full architecture.
+
 ## Async Support
 
 Phase 1 only supports async on `QueryAPI`:
