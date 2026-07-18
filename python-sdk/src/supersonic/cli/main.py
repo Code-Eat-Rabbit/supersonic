@@ -45,15 +45,8 @@ def main_callback(
     no_color: bool = typer.Option(False, "--no-color", help="Disable colored output"),
     verbose: bool = typer.Option(False, "--verbose", "--debug", help="Verbose logging"),
     quiet: bool = typer.Option(False, "--quiet", help="Error-only logging"),
-    show_version: bool = typer.Option(
-        False, "--version", "-V", help="Show version and exit"
-    ),
 ) -> None:
     """SuperSonic CLI - manage semantic models and run queries."""
-    if show_version:
-        typer.echo(f"supersonic-sdk {__version__}")
-        raise typer.Exit(0)
-
     if verbose and quiet:
         raise typer.BadParameter("--verbose and --quiet are mutually exclusive.")
 
@@ -83,6 +76,12 @@ def main_callback(
     ctx.obj = flat
     ctx.obj["__json"] = json_output
     ctx.obj["__no_color"] = no_color
+
+
+@app.command(name="version")
+def version_cmd() -> None:
+    """Show SDK version and exit."""
+    typer.echo(f"supersonic-sdk {__version__}")
 
 
 _SUBCOMMAND_MODULES: list[tuple[str, str, str]] = [
