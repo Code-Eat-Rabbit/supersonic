@@ -29,6 +29,11 @@ dependencies = [
 
 [project.optional-dependencies]
 pandas = ["pandas>=2.0.0"]
+cli = [
+    "typer>=0.9.0",
+    "rich>=13.0.0",
+    "tomli>=2.0.0; python_version < '3.11'",
+]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
@@ -37,7 +42,10 @@ dev = [
     "ruff>=0.8.0",
     "mypy>=1.0",
 ]
-all = ["supersonic-sdk[pandas,dev]"]
+all = ["supersonic-sdk[pandas,cli,dev]"]
+
+[project.scripts]
+supersonic = "supersonic.cli.main:cli_main"
 
 [project.urls]
 Homepage = "https://github.com/tencentmusic/supersonic"
