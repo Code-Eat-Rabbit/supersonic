@@ -23,3 +23,16 @@ class ModelCreateReq(CamelModel):
     table_name: str | None = None
     table_query: str | None = None
     description: str | None = None
+
+
+class ModelUpdateReq(CamelModel):
+    """All fields optional - PATCH semantics."""
+
+    id: int
+    domain_id: int | None = None
+    database_id: int | None = None
+    name: str | None = None
+    biz_name: str | None = None
+    table_name: str | None = None
+    table_query: str | None = None
+    description: str | None = None

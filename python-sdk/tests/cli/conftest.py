@@ -12,6 +12,20 @@ import pytest
 from typer.testing import CliRunner
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _register_cli_subcommands():
+    """Ensure all CLI subcommand groups are registered for testing.
+
+    main.py defers registration to cli_main() to allow standalone import,
+    but tests that invoke `app` directly need the subcommands registered.
+    """
+    import supersonic.cli.main as _main
+
+    if not _main._subcommands_registered:
+        _main._register_subcommands()
+        _main._subcommands_registered = True
+
+
 @pytest.fixture
 def cli_runner() -> CliRunner:
     """typer test runner, isolates stdout/stderr."""
@@ -23,6 +37,9 @@ def mock_client(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
     """Mock SDK SupersonicClient to avoid real HTTP.
 
     Each namespace has sensible defaults; individual tests can override.
+    Patches get_client in common.py AND in all CLI subcommand modules that
+    import it directly (``from supersonic.cli.common import get_client``
+    creates a local binding that monkeypatch on common.py alone won't reach).
     """
     client = MagicMock(name="MockSupersonicClient")
 
@@ -37,10 +54,32 @@ def mock_client(monkeypatch: pytest.MonkeyPatch) -> MagicMock:
         model_id=10, define_type="MEASURE", type="NUMBER",
     )
 
-    monkeypatch.setattr(
-        "supersonic.cli.common.get_client",
-        lambda ctx: client,
-    )
+    _fake_get_client = lambda ctx: client  # noqa: E731
+
+    # Patch in common.py (the source of truth)
+    monkeypatch.setattr("supersonic.cli.common.get_client", _fake_get_client)
+
+    # Patch in every CLI subcommand module that imports get_client directly.
+    # Using importlib to avoid ImportError for modules not yet created.
+    import importlib
+
+    _cli_modules = [
+        "supersonic.cli.domain",
+        "supersonic.cli.model",
+        "supersonic.cli.dataset",
+        "supersonic.cli.dimension",
+        "supersonic.cli.metric",
+        "supersonic.cli.database",
+        "supersonic.cli.query",
+    ]
+    for mod_name in _cli_modules:
+        try:
+            mod = importlib.import_module(mod_name)
+        except ImportError:
+            continue
+        if hasattr(mod, "get_client"):
+            monkeypatch.setattr(f"{mod_name}.get_client", _fake_get_client)
+
     return client
 
 

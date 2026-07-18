@@ -85,25 +85,33 @@ def main_callback(
     ctx.obj["__no_color"] = no_color
 
 
-def _register_subcommands() -> None:
-    """Register all subcommand groups. Called from cli_main() to defer imports."""
-    from supersonic.cli.config_cmd import app as config_app  # type: ignore[import-not-found]
-    from supersonic.cli.database import app as database_app  # type: ignore[import-not-found]
-    from supersonic.cli.dataset import app as dataset_app  # type: ignore[import-not-found]
-    from supersonic.cli.dimension import app as dimension_app  # type: ignore[import-not-found]
-    from supersonic.cli.domain import app as domain_app  # type: ignore[import-not-found]
-    from supersonic.cli.metric import app as metric_app  # type: ignore[import-not-found]
-    from supersonic.cli.model import app as model_app  # type: ignore[import-not-found]
-    from supersonic.cli.query import app as query_app  # type: ignore[import-not-found]
+_SUBCOMMAND_MODULES: list[tuple[str, str, str]] = [
+    ("supersonic.cli.query", "query", "Query the semantic layer (sql/metric/chat)"),
+    ("supersonic.cli.domain", "domain", "Domain CRUD"),
+    ("supersonic.cli.model", "model", "Model CRUD"),
+    ("supersonic.cli.dimension", "dimension", "Dimension CRUD"),
+    ("supersonic.cli.metric", "metric", "Metric CRUD + publish/unpublish"),
+    ("supersonic.cli.database", "database", "Database CRUD + test-connect"),
+    ("supersonic.cli.dataset", "dataset", "Dataset read"),
+    ("supersonic.cli.config_cmd", "config", "Configuration utilities"),
+]
 
-    app.add_typer(query_app, name="query", help="Query the semantic layer (sql/metric/chat)")
-    app.add_typer(domain_app, name="domain", help="Domain CRUD")
-    app.add_typer(model_app, name="model", help="Model CRUD")
-    app.add_typer(dimension_app, name="dimension", help="Dimension CRUD")
-    app.add_typer(metric_app, name="metric", help="Metric CRUD + publish/unpublish")
-    app.add_typer(database_app, name="database", help="Database CRUD + test-connect")
-    app.add_typer(dataset_app, name="dataset", help="Dataset read")
-    app.add_typer(config_app, name="config", help="Configuration utilities")
+
+def _register_subcommands() -> None:
+    """Register all subcommand groups. Called from cli_main() to defer imports.
+
+    Silently skips modules that don't exist yet (progressive implementation).
+    """
+    import importlib
+
+    for module_path, name, help_text in _SUBCOMMAND_MODULES:
+        try:
+            mod = importlib.import_module(module_path)
+        except ImportError:
+            continue
+        sub_app = getattr(mod, "app", None)
+        if sub_app is not None:
+            app.add_typer(sub_app, name=name, help=help_text)
 
 
 _subcommands_registered = False

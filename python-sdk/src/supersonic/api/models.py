@@ -9,7 +9,7 @@ from typing import Any
 from supersonic.api.paths import ModelPaths
 from supersonic.common.http import AsyncHTTPClient, HTTPClient
 from supersonic.common.pagination import Page
-from supersonic.models.model import Model, ModelCreateReq
+from supersonic.models.model import Model, ModelCreateReq, ModelUpdateReq
 
 
 class ModelsAPI:
@@ -55,7 +55,7 @@ class ModelsAPI:
         )
         return Model.model_validate(body)
 
-    def update(self, model_id: int, req: ModelCreateReq) -> Model:
+    def update(self, model_id: int, req: ModelCreateReq | ModelUpdateReq) -> Model:
         """Update model. Reuses ModelCreateReq body; server uses fields present."""
         update_data = req.model_dump(by_alias=True, exclude_none=True)
         update_data["id"] = model_id
