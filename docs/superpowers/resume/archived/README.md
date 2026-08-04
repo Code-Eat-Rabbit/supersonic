@@ -80,6 +80,6 @@
 | `docs/superpowers/specs/2026-07-13-supersonic-resume-bullets-design.md` | 设计文档（含各点设计思路和面试追问预案概要） |
 | `docs/superpowers/resume/01-evaluation-discussion-agenda.md` | 第 1 点评测体系讨论议程 |
 | `docs/superpowers/resume/02-memory-module.md` | 第 2 点 Memory 模块：文案 + 面试 Q&A（6 问） |
-| `docs/superpowers/resume/03-chat-bi-ux-upgrade.md` | 第 3 点 Chat-BI 交互升级：文案 + 面试 Q&A（5 问） |
+| `docs/superpowers/resume/03-chat-bi-ux-upgrade.md` | 第 3 点 Chat-BI 交互升级：完整面试规格（文案 + 全景图 + 源码级 Q&A + 遇到的坑） |
 | `docs/superpowers/resume/04-chat-sdk.md` | 第 4 点 chat-sdk：文案 + 面试 Q&A（6 问） |
 | `docs/superpowers/plans/2026-07-13-supersonic-resume-bullets.md` | 实现计划 |
