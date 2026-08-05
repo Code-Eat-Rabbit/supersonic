@@ -1053,7 +1053,116 @@ Main 与 Sub 也都按自己的 `max_tool_calls_per_turn` 对本轮工具调用�
 
 ## 8. 专节：顺序执行 vs 简历「并发」
 
-（任务 5 填充）
+### 8.1 标本证据：单题内顺序调度
+
+`src/core/orchestrator.py:1110-1150` 对 Main Agent 一轮内的 tool call 调度写得很直接：
+
+```python
+            # 7. Execute tool calls (in sequence)
+            tool_calls_data = []
+            all_tool_results_content_with_id = []
+
+            max_tool_calls = self.cfg.main_agent.max_tool_calls_per_turn
+            tool_calls_exceeded = (
+                len(tool_calls) > 0 and len(tool_calls[0]) > max_tool_calls
+            )
+
+            for call in tool_calls[0][:max_tool_calls]:
+                server_name = call["server_name"]
+                tool_name = call["tool_name"]
+                arguments = call["arguments"]
+
+                if server_name == "human" and tool_name == "ask_user":
+                    tool_result = await self._ask_user_tool(arguments)
+                elif server_name.startswith("agent-"):
+                    sub_agent_result = await self.run_sub_agent(
+                        server_name, str(arguments), keep_tool_result
+                    )
+                else:
+                    tool_result = (
+                        await self.main_agent_tool_manager.execute_tool_call(
+                            server_name=server_name,
+                            tool_name=tool_name,
+                            arguments=arguments,
+                        )
+                    )
+```
+
+这里要区分「生成」和「执行」：LLM 一轮可以提出多个 tool call，但执行器进入 `for` 循环后，会对当前调用直接 `await`；当前工具或子 Agent 返回后，才进入下一次迭代。因此，当前可核对标本的**单题内调用是顺序调度**，`max_tool_calls_per_turn` 也只是截断上限，不是并发度。
+
+### 8.2 对比：多题并行不是单题内并行
+
+`common_benchmark.py:369-393` 的 `run_parallel_inference` 确实使用了 `Semaphore + gather(return_exceptions=True)`：
+
+```python
+    async def run_parallel_inference(
+        self, tasks: List[BenchmarkTask], max_concurrent: int = 3
+    ) -> List[BenchmarkResult]:
+        """Run inference on multiple tasks in parallel"""
+        print(
+            f"Running inference on {len(tasks)} tasks with max_concurrent={max_concurrent}"
+        )
+
+        semaphore = asyncio.Semaphore(max_concurrent)
+
+        async def run_with_semaphore(task):
+            async with semaphore:
+                with task_logging_context(task.task_id, self.get_log_dir()):
+                    result = await self.run_single_task(task)
+                return result
+
+        shuffled_tasks = tasks.copy()
+        random.shuffle(shuffled_tasks)
+
+        results = await asyncio.gather(
+            *[run_with_semaphore(task) for task in shuffled_tasks],
+            return_exceptions=True,
+        )
+```
+
+但并行单元是 `tasks` 列表中的**多道 benchmark 题目**：每道题调用一次 `run_single_task`，`max_concurrent` 限制同时运行的题目数，`return_exceptions=True` 防止一道题异常直接取消整批任务。它不能证明某一道题内部同时运行了多个子 Agent。
+
+换句话说，两处代码控制的是不同层级：
+
+- **单题内：** `orchestrator.py` 对一轮 tool call / 子 Agent 调用逐个 `await`，当前是顺序调度。
+- **多题间：** `common_benchmark.py` 用 `Semaphore` 控制题目级并发，再用 `gather` 汇总结果。
+
+并发追问 G22 的详答仍放在 [`02-面试问答.md`](./02-面试问答.md)；未来若补 G 专项，也应继续保持「单题内调度」与「评测多题吞吐」两个层级的区分。
+
+### 8.3 简历口径模板（可背）
+
+> 主 Agent 动态拆子任务；子任务在独立会话执行并回传摘要。当前可核对实现里，单题内 tool call / 子 Agent 调用是顺序调度；架构上可以把无依赖子任务并行化，但需要单独配置全局并发、超时和异常隔离。评测里的 `max_concurrent` 是多题并行，不是单题内同时跑 N 个子 Agent。
+
+如果面试官继续追问「简历为什么写并发」，可以补一句：
+
+> 我描述的是 Main–Sub 架构对无依赖子任务的并行化能力与演进方向，不是把当前标本的顺序 `for + await` 说成已并行落地；已落地的 `Semaphore + gather` 位于 benchmark 多题执行层。
+
+### 8.4 可选演进（未在标本落地）
+
+下面只是单题内无依赖调用并行化的伪代码草图，**未在标本落地，本准备文档也不修改业务代码**：
+
+```python
+async def execute_independent_calls(calls, max_concurrent):
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def run_one(call):
+        async with semaphore:
+            try:
+                return await asyncio.wait_for(
+                    dispatch_tool_or_sub_agent(call),
+                    timeout=PER_CALL_TIMEOUT,
+                )
+            except Exception as exc:
+                return ToolCallFailure(call_id=call["id"], error=str(exc))
+
+    results = await asyncio.gather(
+        *(run_one(call) for call in calls),
+        return_exceptions=False,
+    )
+    return reorder_by_original_call_id(results)
+```
+
+真正落地前还要先做依赖分析：只有无依赖、无共享可变状态冲突的调用才能进入同一批次；同时要补全全局并发上限、单调用超时、异常隔离、结果顺序恢复、取消传播、日志关联和预算统计。否则，机械地把现有循环替换成 `asyncio.gather`，可能造成限流失效、历史顺序错乱或一个失败拖累整批调用。
 
 ## 9. 面试题索引（E13–E16）
 
