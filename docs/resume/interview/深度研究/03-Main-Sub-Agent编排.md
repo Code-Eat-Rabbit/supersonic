@@ -911,11 +911,145 @@ Sub 的完整对话保存在 `sub_agent_message_history_sessions[session_id]`，
 
 ## 6. 调用链精读⑤：主 Agent final summary
 
-（任务 4 填充）
+### 6.1 主循环结束后统一进入总结阶段
+
+文件：`src/core/orchestrator.py:1227-1258`
+
+```python
+        # Record main loop end
+        if turn_count >= max_turns:
+            if (
+                not task_failed
+            ):  # If not yet marked as failed and due to turn limit exceeded
+                task_failed = True
+            self.task_log.log_step(
+                "max_turns_reached",
+                f"Reached maximum turns ({max_turns})",
+                "warning",
+            )
+
+        else:
+            self.task_log.log_step(
+                "main_loop_completed", f"Main loop completed after {turn_count} turns"
+            )
+
+        # Final summary
+        self.task_log.log_step("final_summary", "Generating final summary")
+
+        # Use context limit retry logic to generate final summary
+        final_answer_text = await self._handle_summary_with_context_limit_retry(
+            system_prompt,
+            main_agent_prompt_instance,
+            message_history,
+            tool_definitions,
+            "Final summary generation",
+            task_description,
+            task_failed,
+            agent_type="main",
+            task_guidence=task_guidence,
+        )
+```
+
+主循环可能因为模型主动停止、无工具调用、LLM 调用失败、上下文超限或达到 `max_turns` 而结束，但这些出口最终都会汇合到 `_handle_summary_with_context_limit_retry`。如果达到轮次上限，代码先把 `task_failed` 置为 `True`；如果循环内 LLM 调用失败，也已设置该标记。它不是「失败后跳过 summary」的开关，而是传入总结 Prompt 的状态，使模型基于已有 `message_history` 尽力给出带失败语境的最终答案。这与 §5.3 的 Sub Agent 处理方式对称。
+
+### 6.2 输出契约：自然语言报告，而非已强校验的 JSON
+
+标本中的 `final_answer_text` 是 LLM 生成的**自然语言 summary**。工程上希望最终报告具备「结论、证据、缺口、不确定性」等逻辑结构，方便 Main 把多个 Sub Agent 的结果综合为可解释答案；但这是一项输出质量关注点，不等于代码已经落地 JSON schema 强校验。
+
+因此，遇到 summary 质量不足时，合理的编排动作是：
+
+1. **重派**：原子任务定义不清或执行方向错误时，改写 `subtask` 后重新委派。
+2. **补证**：结论缺少来源或证据冲突时，追加定向检索、阅读或验证任务。
+3. **降置信**：预算耗尽、关键证据缺失或冲突无法消解时，在最终答案中显式保留缺口与不确定性。
+
+标本未展示一个对 summary 自动打分并据分数触发上述动作的质量评估器；这些动作应由 Main 根据任务状态、证据完整性和预算作出决策，不能说成已有自动评分闭环。
+
+### 面试时怎么说
+
+> Main Agent 不直接把最后一轮回复当最终答案，而是在主循环结束后统一调用 `_handle_summary_with_context_limit_retry`，基于完整主 history 再生成一次自然语言 summary。即使 LLM 调用失败或达到 `max_turns`，也会把 `task_failed` 传入总结逻辑，尽量保留已有成果。我们关注结论、证据、缺口和不确定性的逻辑结构，但标本没有 JSON schema 强校验或自动质量打分器；质量不足时采用重派、补证或降置信。
+
+### 易踩坑
+
+- 不要说 `task_failed=True` 就直接返回错误；控制流仍会进入 final summary。
+- 不要把「结构化表达」等同于「返回 JSON」；标本产物是自然语言文本。
+- 不要声称已有自动 summary 打分器；能确认的是总结生成与上下文超限重试路径。
+- 不要把 Main summary 与 Sub summary 混为一次调用：Sub 先返回摘要作为工具结果，Main 再基于主 history 做总汇总。
 
 ## 7. 预算与熔断
 
-（任务 4 填充）
+### 7.1 标本配置：Main 20/10，Sub worker 50/10
+
+以下数字来自 `config/agent_llm_qwen37plus.yaml`，用于复习标本控制流，不代表未经实测即可照搬的线上最优参数。
+
+| Agent | `max_turns` | `max_tool_calls_per_turn` | 标本含义 |
+|------|------------:|--------------------------:|----------|
+| Main Agent | 20 | 10 | 最多进行 20 轮主决策；每轮最多执行前 10 个工具调用 |
+| Sub `agent-worker` | 50 | 10 | 最多进行 50 轮子任务决策；每轮最多执行前 10 个工具调用 |
+
+### 7.2 第一层预算：`max_turns` 限制循环深度
+
+Main 与 Sub 使用同一种循环条件；区别只是从各自配置读取上限。以 Main 为例：
+
+```python
+        max_turns = self.cfg.main_agent.max_turns
+        if max_turns < 0:
+            max_turns = sys.maxsize
+        turn_count = 0
+        task_failed = False  # Track whether task failed
+        while turn_count < max_turns:
+            turn_count += 1
+```
+
+当 `turn_count` 达到上限后，不再进入下一轮 LLM—Tool 决策。循环结束处会记录告警、设置 `task_failed`，随后仍进入 §6 的 final summary。它限制的是会话纵向推进深度，避免 Agent 无休止地「思考—调用—再思考」。
+
+### 7.3 第二层预算：`tool_calls_exceeded` 截断单轮调用数
+
+Main 与 Sub 也都按自己的 `max_tool_calls_per_turn` 对本轮工具调用切片。以 Main 为例：
+
+```python
+            max_tool_calls = self.cfg.main_agent.max_tool_calls_per_turn
+            tool_calls_exceeded = (
+                len(tool_calls) > 0 and len(tool_calls[0]) > max_tool_calls
+            )
+            if tool_calls_exceeded:
+                logger.warning(
+                    f"[ERROR] Single turn tool call count too high ({len(tool_calls[0])} calls), only processing first {max_tool_calls}"
+                )
+
+            for call in tool_calls[0][:max_tool_calls]:
+                # Execute only the first max_tool_calls entries
+                ...
+
+            message_history = self.llm_client.update_message_history(
+                message_history, all_tool_results_content_with_id, tool_calls_exceeded
+            )
+```
+
+这里不是先执行全部调用再统计，而是只处理 `[:max_tool_calls]` 的前 N 个，并把 `tool_calls_exceeded` 传给 history 更新逻辑，让后续推理知道本轮发生了截断。
+
+### 7.4 两道预算的含义不能混用
+
+| 维度 | `max_turns` | `max_tool_calls_per_turn` |
+|------|-------------|---------------------------|
+| 控制对象 | 整个 Agent 会话的循环轮数 | 单轮 LLM 响应中的工具调用数量 |
+| 防护风险 | 无限循环、上下文持续膨胀、累计成本失控 | 单轮调用爆炸、瞬时成本和延迟过高 |
+| 触发结果 | 停止循环，标记失败语境，再尝试 summary | 截断为前 N 个，记录超限并继续后续轮次 |
+| 不代表 | 工具调用总量的精确硬上限 | 并发数、worker 数或全任务总调用数 |
+
+两层约束组合后，理论执行量仍不能简单当作严格的 `max_turns × max_tool_calls_per_turn` 成本承诺：每轮可能提前结束，Sub Agent 内还有自己的循环与工具调用，LLM 重试、summary 和人工交互也会产生额外开销。线上还应结合 token、金额、墙钟时间、重试次数和全链路调用总数设置更完整的预算熔断。
+
+完整的预算追问 G23 仍见 [`02-面试问答.md`](./02-面试问答.md)；本文只解释 Main–Sub 编排直接相关的轮次与单轮工具调用限制。
+
+### 面试时怎么说
+
+> 这套编排有两道基础预算：`max_turns` 控制 Agent 循环深度，`max_tool_calls_per_turn` 控制单轮工具调用数，超出的调用只取前 N 个。标本配置是 Main 20/10、Sub worker 50/10，但这是 GAIA 复习标本参数，不是未经压测就能宣称的线上最优；生产值要根据任务完成率、P95 延迟、token 与工具成本、超限率共同调优，并补充全链路预算。
+
+### 易踩坑
+
+- 不要把 `10` 说成「同时并发 10 个子 Agent」；标本工具循环仍是顺序执行。
+- 不要把 `20 × 10` 说成整个任务绝不会超过 200 次工具调用；一次 Main 委派会进入 Sub 自己的预算域。
+- 不要说达到 `max_turns` 后完全无输出；实现仍尝试 final summary。
+- 不要把标本参数包装成线上最佳实践；缺少业务压测和成本数据时，只能称为配置示例。
 
 ## 8. 专节：顺序执行 vs 简历「并发」
 
