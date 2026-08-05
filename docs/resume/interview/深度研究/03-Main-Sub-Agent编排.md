@@ -966,7 +966,7 @@ Sub 的完整对话保存在 `sub_agent_message_history_sessions[session_id]`，
 
 ### 面试时怎么说
 
-> Main Agent 不直接把最后一轮回复当最终答案，而是在主循环结束后统一调用 `_handle_summary_with_context_limit_retry`，基于完整主 history 再生成一次自然语言 summary。即使 LLM 调用失败或达到 `max_turns`，也会把 `task_failed` 传入总结逻辑，尽量保留已有成果。我们关注结论、证据、缺口和不确定性的逻辑结构，但标本没有 JSON schema 强校验或自动质量打分器；质量不足时采用重派、补证或降置信。
+> Main Agent 不直接把最后一轮回复当最终答案，而是在主循环结束后统一调用 `_handle_summary_with_context_limit_retry`，优先基于完整主 history 生成 summary；若触发上下文超限重试，则会裁剪近期对话后再生成，并不保证始终保留完整 history。即使 LLM 调用失败或达到 `max_turns`，也会把 `task_failed` 传入总结逻辑，尽量保留已有成果。我们关注结论、证据、缺口和不确定性的逻辑结构，但标本没有 JSON schema 强校验或自动质量打分器；质量不足时采用重派、补证或降置信。
 
 ### 易踩坑
 
