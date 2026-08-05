@@ -295,11 +295,13 @@ def expose_sub_agents_as_tools(sub_agents_cfg: DictConfig):
         if not tool_definitions:
 ```
 
-旁注：`run_main_agent` 先取得 Main 自身的普通工具，再把 Sub Agent 的工具定义追加到同一份 `tool_definitions`。LLM 看到的是统一工具面，因而可以依据名称、描述和 schema 在运行时决定直接用普通工具，还是调用 `agent-worker.execute_subtask`。
+旁注：`run_main_agent` 先取得 Main 自身的普通工具，再把 Sub Agent 的**伪工具**定义追加到同一份 `tool_definitions`。LLM 看到的是统一工具面，因而可以依据名称、描述和 schema 在运行时决定直接用普通 MCP 工具，还是调用 `agent-worker.execute_subtask`（入参 `subtask` = 任务描述字符串）；后者在主循环里会被 `agent-` 前缀识别并转交 `run_sub_agent`（§4）。
 
 ### 面试时怎么说
 
-子 Agent 在 Main Agent 眼里就是一种可调用工具。系统从配置动态生成工具定义，Main 根据当前问题和工具描述决定是否委派，并把明确的 `subtask` 交给它；因此这是 LLM 驱动的动态委派，不是代码里写死「某类问题固定路由到某角色」的路由表。Sub 完成后返回处理过的 summary report，Main 再继续推理和汇总。
+1. **子 Agent 是带 `agent-` 前缀的伪工具**——不是普通 MCP server，而是经 `expose_sub_agents_as_tools` 生成 tool 定义后并入主工具列表；主循环里若 `server_name.startswith("agent-")` 则拦截，转调 `run_sub_agent`（主循环拦截细节见 §4），而不是走 `ToolManager.execute` 的普通 MCP 路径。
+2. **入参是任务描述**：工具 schema 字段名是 `subtask`，语义即一段任务描述字符串（背景、目标、范围写进这段委派指令）；Main 根据当前问题与工具描述决定是否委派，因此是 LLM 驱动的动态委派，不是写死「某类问题固定路由到某角色」的路由表。
+3. Sub 完成后返回 processed summary report（非原始检索结果），Main 再继续推理和汇总。
 
 ### 易踩坑
 
