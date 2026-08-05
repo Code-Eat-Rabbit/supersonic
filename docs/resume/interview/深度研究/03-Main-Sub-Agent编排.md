@@ -313,11 +313,601 @@ def expose_sub_agents_as_tools(sub_agents_cfg: DictConfig):
 
 ## 4. 调用链精读③：主循环
 
-（任务 3 填充）
+### 4.1 循环骨架：每轮先问 LLM，再判断是否调用工具
+
+文件：`src/core/orchestrator.py:1052-1108`
+
+```python
+        # 4. Main loop: LLM <-> Tools
+        max_turns = self.cfg.main_agent.max_turns
+        if max_turns < 0:
+            max_turns = sys.maxsize
+        turn_count = 0
+        task_failed = False  # Track whether task failed
+        while turn_count < max_turns:
+            turn_count += 1
+            logger.debug(f"\n--- Main Agent Turn {turn_count} ---")
+            self.task_log.save()
+
+            # Use unified LLM call handling
+            (
+                assistant_response_text,
+                should_break,
+                tool_calls,
+            ) = await self._handle_llm_call_with_logging(
+                system_prompt,
+                message_history,
+                tool_definitions,
+                turn_count,
+                f"Main agent turn {turn_count}",
+                keep_tool_result=keep_tool_result,
+                agent_type="main",
+            )
+
+            # Handle LLM response
+            if assistant_response_text:
+                if should_break:
+                    break
+            else:
+                # LLM call failed, mark task as failed and end current turn
+                if tool_calls == "context_limit":
+                    # Context limit exceeded situation
+                    self.task_log.log_step(
+                        "main_agent_context_limit_reached",
+                        "Main agent context limit reached, jumping to summary",
+                        "warning",
+                    )
+                else:
+                    # Other LLM call failure situations
+                    self.task_log.log_step(
+                        step_name="main_agent",
+                        message="LLM call failed",
+                        status="failed",
+                    )
+                task_failed = True  # Mark task as failed
+                break
+
+            if (
+                tool_calls is None
+                or len(tool_calls) < 2
+                or (len(tool_calls[0]) == 0 and len(tool_calls[1]) == 0)
+            ):
+                # No tool calls, consider as final answer
+                logger.debug("LLM did not request tool use, process ends.")
+                break  # Exit loop
+```
+
+`_handle_llm_call_with_logging` 同时返回自然语言响应、是否应中止和解析后的工具调用。没有工具调用、LLM 主动结束、调用失败或达到 `max_turns`，都会结束 ReAct 式循环；本轮工具结果写回 history 后，下一轮 LLM 才能读取结果并继续决策。
+
+### 4.2 完整工具执行段：普通工具与子 Agent 在同一个顺序循环中分流
+
+文件：`src/core/orchestrator.py:1110-1225`
+
+```python
+            # 7. Execute tool calls (in sequence)
+            tool_calls_data = []
+            all_tool_results_content_with_id = []
+
+            # Get maximum tool calls per turn from configuration
+            max_tool_calls = self.cfg.main_agent.max_tool_calls_per_turn
+            tool_calls_exceeded = (
+                len(tool_calls) > 0 and len(tool_calls[0]) > max_tool_calls
+            )
+            if tool_calls_exceeded:
+                logger.warning(
+                    f"[ERROR] Single turn tool call count too high ({len(tool_calls[0])} calls), only processing first {max_tool_calls}"
+                )
+
+            for call in tool_calls[0][:max_tool_calls]:
+                server_name = call["server_name"]
+                tool_name = call["tool_name"]
+                arguments = call["arguments"]
+                call_id = call["id"]
+
+                call_start_time = time.time()
+                try:
+                    if server_name == "human" and tool_name == "ask_user":
+                        tool_result = await self._ask_user_tool(arguments)
+                    elif server_name.startswith("agent-"):
+                        sub_agent_result = await self.run_sub_agent(
+                            server_name, str(arguments), keep_tool_result
+                        )
+                        tool_result = {
+                            "server_name": server_name,
+                            "tool_name": tool_name,
+                            "result": sub_agent_result,
+                        }
+                    else:
+                        tool_result = (
+                            await self.main_agent_tool_manager.execute_tool_call(
+                                server_name=server_name,
+                                tool_name=tool_name,
+                                arguments=arguments,
+                            )
+                        )
+
+                    call_end_time = time.time()
+                    call_duration_ms = int((call_end_time - call_start_time) * 1000)
+
+                    tool_calls_data.append(
+                        {
+                            "server_name": server_name,
+                            "tool_name": tool_name,
+                            "arguments": arguments,
+                            "result": tool_result,
+                            "duration_ms": call_duration_ms,
+                            "call_time": datetime.datetime.now(),
+                        }
+                    )
+                    self._log_hybrid_observability(tool_result, "main")
+
+                except Exception as e:
+                    call_end_time = time.time()
+                    call_duration_ms = int((call_end_time - call_start_time) * 1000)
+
+                    # Handle empty error messages, especially for TimeoutError
+                    error_msg = str(e) or (
+                        "[ERROR]: Tool execution timeout"
+                        if isinstance(e, TimeoutError)
+                        else f"Tool execution failed: {type(e).__name__}"
+                    )
+
+                    tool_calls_data.append(
+                        {
+                            "server_name": server_name,
+                            "tool_name": tool_name,
+                            "arguments": arguments,
+                            "error": error_msg,
+                            "duration_ms": call_duration_ms,
+                            "call_time": datetime.datetime.now(),
+                        }
+                    )
+                    tool_result = {
+                        "server_name": server_name,
+                        "tool_name": tool_name,
+                        "error": error_msg,
+                    }
+
+                # Format result for LLM feedback (more concise)
+                tool_result_for_llm = self.output_formatter.format_tool_result_for_user(
+                    tool_result
+                )
+                # all_tool_results_content.extend(tool_result_for_llm)  # Collect all tool results
+                all_tool_results_content_with_id.append((call_id, tool_result_for_llm))
+
+            if len(tool_calls) > 1 and len(tool_calls[1]) > 0:
+                tool_result = {
+                    "result": f"Your tool call format was incorrect, and the tool invocation failed, error_message: {tool_calls[1][0]['error']}; please review it carefully and try calling again.",
+                    "server_name": "re-think",
+                    "tool_name": "re-think",
+                }
+                tool_calls_data.append(
+                    {
+                        "server_name": "",
+                        "tool_name": "",
+                        "arguments": "",
+                        "result": tool_result,
+                        "duration_ms": 0,
+                        "call_time": datetime.datetime.now(),
+                    }
+                )
+                tool_result_for_llm = self.output_formatter.format_tool_result_for_user(
+                    tool_result
+                )
+                all_tool_results_content_with_id.append(("FAILED", tool_result_for_llm))
+
+            # Update message history with tool calls data (llm client specific)
+            message_history = self.llm_client.update_message_history(
+                message_history, all_tool_results_content_with_id, tool_calls_exceeded
+            )
+```
+
+三条必须钉死的结论：
+
+1. **顺序执行（Execute tool calls in sequence）**：注释已明确写出 `Execute tool calls (in sequence)`；`for` 循环体内直接 `await` 当前调用，完成后才进入下一次迭代。标本中没有 `asyncio.gather` 或并行调度这一组调用。
+2. **`max_tool_calls_per_turn` 是截断上限，不是并发度**：切片 `tool_calls[0][:max_tool_calls]` 只处理前 N 个调用；超出部分通过 `tool_calls_exceeded` 告知 history 更新逻辑。
+3. **只有 `server_name.startswith("agent-")` 才进入子 Agent**：`human.ask_user` 走人工反馈分支，`agent-*` 调用 `run_sub_agent`，其余服务都交给 `main_agent_tool_manager.execute_tool_call`。
+
+子 Agent 的 `final_answer_text` 被包装为普通 `tool_result["result"]`，再与 `call_id` 一起写回 Main 的 `message_history`。因此从 Main 的视角看，委派与普通 MCP 调用遵循同一种「调用—结果—下一轮推理」协议。
+
+### 面试时怎么说
+
+> Main Agent 是一个有轮次上限的 LLM—Tool 闭环。每轮 LLM 可以提出多个工具调用，但实现用 `for` 加逐个 `await` 顺序执行，并由 `max_tool_calls_per_turn` 截断前 N 个；它不是并发参数。工具名以 `agent-` 开头时，编排器把这次调用拦截为子 Agent 委派，等待 `run_sub_agent` 返回摘要，再像普通工具结果一样写回 Main history，供下一轮继续推理。
+
+### 易踩坑
+
+- 不要因为 LLM 一轮生成多个 tool calls，就声称执行层已经并发；标本的证据恰好相反，是 `in sequence`。
+- 不要把 `max_tool_calls_per_turn` 解释成「并发 worker 数」；它只是列表切片上限。
+- 不要说所有工具都可能递归创建子 Agent；只有 `agent-` 前缀分支会调用 `run_sub_agent`。
+- 不要声称标本已经使用 `gather`；若简历要描述并发，需要另行实现并发调度，并处理结果顺序、共享状态和异常隔离。
+
+**下一跳：** §5 进入 `run_sub_agent`，查看子会话怎样建立独立 history、执行自己的 LLM—Tool 循环并只向 Main 回传摘要。
 
 ## 5. 调用链精读④：`run_sub_agent`
 
-（任务 3 填充）
+### 5.1 建立隔离单元：新 session、新 history、自己的工具集
+
+文件：`src/core/orchestrator.py:577-623`
+
+```python
+    async def run_sub_agent(
+        self, sub_agent_name, task_description, keep_tool_result: int = -1
+    ):
+        """
+        Run sub agent
+        """
+        logger.debug(f"\n=== Starting Sub Agent {sub_agent_name} ===")
+        task_description += "\n\nPlease provide the answer and detailed supporting information of the subtask given to you."
+        logger.debug(f"Subtask: {task_description}")
+
+        # Start new sub-agent session
+        self.task_log.start_sub_agent_session(sub_agent_name, task_description)
+
+        # Reset sub-agent usage stats for independent tracking
+        self.sub_agent_llm_client.reset_usage_stats()
+
+        # Simplified initial user content (no file attachments)
+        initial_user_content = [{"type": "text", "text": task_description}]
+        message_history = [{"role": "user", "content": initial_user_content}]
+
+        # Get sub-agent tool definitions
+        tool_definitions = await self._list_sub_agent_tools()
+        tool_definitions = tool_definitions.get(sub_agent_name, [])
+        self.task_log.log_step(
+            f"get_sub_{sub_agent_name}_tool_definitions", f"{tool_definitions}"
+        )
+
+        if not tool_definitions:
+            logger.debug(
+                "Warning: Failed to get any tool definitions. LLM may not be able to use tools."
+            )
+            self.task_log.log_step(
+                f"{sub_agent_name}_no_tools",
+                f"No tool definitions available for {sub_agent_name}",
+                "warning",
+            )
+
+        # Generate sub-agent system prompt
+        if not self.cfg.sub_agents or sub_agent_name not in self.cfg.sub_agents:
+            raise ValueError(f"Sub-agent {sub_agent_name} not found in configuration")
+        sub_agent_prompt_instance = _load_agent_prompt_class(
+            self.cfg.sub_agents[sub_agent_name].prompt_class
+        )
+        system_prompt = sub_agent_prompt_instance.generate_system_prompt_with_mcp_tools(
+            mcp_servers=tool_definitions,
+            chinese_context=self.chinese_context,
+        )
+```
+
+这里的隔离不是只换一个名字，而是至少包含四层：调用 `start_sub_agent_session` 建立独立 session、重置 Sub LLM 用量统计、从任务描述新建 `message_history`、按 `sub_agent_name` 选择该角色自己的工具定义与 prompt。它没有把 Main 的完整 history 复制进来。
+
+### 5.2 子循环：与 Main 同构，但工具执行器属于 Sub
+
+文件：`src/core/orchestrator.py:625-804`
+
+```python
+        # Limit sub-agent turns
+        max_turns = self.cfg.sub_agents[sub_agent_name].max_turns
+        if max_turns < 0:
+            max_turns = sys.maxsize
+        turn_count = 0
+        all_tool_results_content_with_id = []
+        task_failed = False  # Track whether task failed
+
+        while turn_count < max_turns:
+            turn_count += 1
+            logger.debug(f"\n--- Sub Agent {sub_agent_name} Turn {turn_count} ---")
+            self.task_log.save()
+
+            # Use unified LLM call handling
+            (
+                assistant_response_text,
+                should_break,
+                tool_calls,
+            ) = await self._handle_llm_call_with_logging(
+                system_prompt,
+                message_history,
+                tool_definitions,
+                turn_count,
+                f"Sub agent {sub_agent_name} turn {turn_count}",
+                keep_tool_result=keep_tool_result,
+                agent_type=sub_agent_name,
+            )
+
+            # Handle LLM response
+            if assistant_response_text:
+                if should_break:
+                    self.task_log.log_step(
+                        "sub_agent_early_termination",
+                        f"Sub agent {sub_agent_name} terminated early on turn {turn_count}",
+                    )
+                    break
+            else:
+                # LLM call failed, mark task as failed and end current turn
+                if tool_calls == "context_limit":
+                    # Context limit exceeded situation
+                    self.task_log.log_step(
+                        "sub_agent_context_limit_reached",
+                        f"Sub agent {sub_agent_name} context limit reached, jumping to summary",
+                        "warning",
+                    )
+                else:
+                    # Other LLM call failure situations
+                    self.task_log.log_step(
+                        "sub_agent_llm_call_failed",
+                        "LLM call failed",
+                        "failed",
+                    )
+                task_failed = True  # Mark task as failed
+                break
+
+            # Use tool calls parsed from LLM response
+            if (
+                tool_calls is None
+                or len(tool_calls) < 2
+                or (len(tool_calls[0]) == 0 and len(tool_calls[1]) == 0)
+            ):
+                logger.debug(
+                    f"Sub Agent {sub_agent_name} did not request tool use, ending task."
+                )
+                self.task_log.log_step(
+                    "sub_agent_no_tool_calls",
+                    f"No tool calls found in sub agent {sub_agent_name}, ending on turn {turn_count}",
+                )
+                break
+
+            # Execute tool calls
+            tool_calls_data = []
+            all_tool_results_content_with_id = []
+
+            # Get maximum tool calls per turn from configuration
+            max_tool_calls = self.cfg.sub_agents[sub_agent_name].max_tool_calls_per_turn
+            tool_calls_exceeded = (
+                len(tool_calls) > 0 and len(tool_calls[0]) > max_tool_calls
+            )
+            if tool_calls_exceeded:
+                logger.warning(
+                    f"[ERROR] Sub agent single turn tool call count too high ({len(tool_calls[0])} calls), only processing first {max_tool_calls}"
+                )
+
+            for call in tool_calls[0][:max_tool_calls]:
+                # This place can be used to inject arguments of tools
+                server_name = call["server_name"]
+                tool_name = call["tool_name"]
+                arguments = call["arguments"]
+                call_id = call["id"]
+
+                self.task_log.log_step(
+                    "sub_agent_tool_call_start",
+                    f"Executing {tool_name} on {server_name}",
+                )
+
+                call_start_time = time.time()
+                try:
+                    tool_result = await self.sub_agent_tool_managers[
+                        sub_agent_name
+                    ].execute_tool_call(server_name, tool_name, arguments)
+
+                    call_end_time = time.time()
+                    call_duration_ms = int((call_end_time - call_start_time) * 1000)
+
+                    self.task_log.log_step(
+                        "sub_agent_tool_call_success",
+                        f"Tool {tool_name} executed successfully in {call_duration_ms}ms",
+                    )
+
+                    tool_calls_data.append(
+                        {
+                            "server_name": server_name,
+                            "tool_name": tool_name,
+                            "arguments": arguments,
+                            "result": tool_result,
+                            "duration_ms": call_duration_ms,
+                            "call_time": datetime.datetime.now(),
+                        }
+                    )
+                    self._log_hybrid_observability(tool_result, f"sub:{sub_agent_name}")
+
+                except Exception as e:
+                    call_end_time = time.time()
+                    call_duration_ms = int((call_end_time - call_start_time) * 1000)
+
+                    # Handle empty error messages, especially for TimeoutError
+                    error_msg = str(e) or (
+                        "[ERROR]: Tool execution timeout"
+                        if isinstance(e, TimeoutError)
+                        else f"Tool execution failed: {type(e).__name__}"
+                    )
+
+                    tool_calls_data.append(
+                        {
+                            "server_name": server_name,
+                            "tool_name": tool_name,
+                            "arguments": arguments,
+                            "error": error_msg,
+                            "duration_ms": call_duration_ms,
+                            "call_time": datetime.datetime.now(),
+                        }
+                    )
+                    tool_result = {
+                        "error": f"Tool call failed: {error_msg}",
+                        "server_name": server_name,
+                        "tool_name": tool_name,
+                    }
+
+                tool_result_for_llm = self.output_formatter.format_tool_result_for_user(
+                    tool_result
+                )
+                logger.debug(f"Tool result: {tool_result}")
+
+                all_tool_results_content_with_id.append((call_id, tool_result_for_llm))
+
+            if len(tool_calls) > 1 and len(tool_calls[1]) > 0:
+                tool_result = {
+                    "result": f"Your tool call format was incorrect, and the tool invocation failed, error_message: {tool_calls[1][0]['error']}; please review it carefully and try calling again.",
+                    "server_name": "re-think",
+                    "tool_name": "re-think",
+                }
+                tool_calls_data.append(
+                    {
+                        "server_name": "",
+                        "tool_name": "",
+                        "arguments": "",
+                        "result": tool_result,
+                        "duration_ms": 0,
+                        "call_time": datetime.datetime.now(),
+                    }
+                )
+                tool_result_for_llm = self.output_formatter.format_tool_result_for_user(
+                    tool_result
+                )
+                all_tool_results_content_with_id.append(("FAILED", tool_result_for_llm))
+
+            message_history = self.sub_agent_llm_client.update_message_history(
+                message_history, all_tool_results_content_with_id, tool_calls_exceeded
+            )
+```
+
+Sub 与 Main 的循环骨架同构：都有 `max_turns`、统一 LLM 调用、退出判断、工具调用截断、异常转工具结果和 history 回写。关键差异是工具集来自 `_list_sub_agent_tools()` 按名称筛选，执行则通过 `self.sub_agent_tool_managers[sub_agent_name]`，不会借用 Main 的 ToolManager。
+
+### 5.3 即使失败或耗尽轮次，也尝试生成最终摘要
+
+文件：`src/core/orchestrator.py:806-861`
+
+```python
+        # Continue execution
+        logger.debug(
+            f"\n=== Sub Agent {sub_agent_name} Completed ({turn_count} turns) ==="
+        )
+
+        # Record browser agent loop end
+        if turn_count >= max_turns:
+            if (
+                not task_failed
+            ):  # If not yet marked as failed and due to turn limit exceeded
+                task_failed = True
+            self.task_log.log_step(
+                "sub_agent_max_turns_reached",
+                f"Sub agent {sub_agent_name} reached maximum turns ({max_turns})",
+                "warning",
+            )
+
+        else:
+            self.task_log.log_step(
+                "sub_agent_loop_completed",
+                f"Sub agent {sub_agent_name} loop completed after {turn_count} turns",
+            )
+
+        # Final summary - following main agent process
+        self.task_log.log_step(
+            "sub_agent_final_summary",
+            f"Generating sub agent {sub_agent_name} final summary",
+        )
+
+        # Use context limit retry logic to generate final summary
+        final_answer_text = await self._handle_summary_with_context_limit_retry(
+            system_prompt,
+            sub_agent_prompt_instance,
+            message_history,
+            tool_definitions,
+            f"Sub agent {sub_agent_name} final summary",
+            task_description,
+            task_failed,
+            agent_type=sub_agent_name,
+        )
+
+        if final_answer_text:
+            self.task_log.log_step(
+                "sub_agent_final_answer",
+                f"Sub agent {sub_agent_name} final answer generated successfully",
+            )
+
+        else:
+            final_answer_text = (
+                f"No final answer generated by sub agent {sub_agent_name}."
+            )
+            self.task_log.log_step(
+                "sub_agent_final_answer",
+                f"Failed to generate sub agent {sub_agent_name} final answer",
+                "failed",
+            )
+```
+
+`task_failed` 不是「立即跳过总结」开关。上下文超限、LLM 调用失败或 `max_turns` 耗尽会先结束子循环，但控制流仍进入 `sub_agent_final_summary`，调用 `_handle_summary_with_context_limit_retry`；该函数接收失败标记和现有 history，尽力把已经获得的信息压缩为可回传结果。
+
+### 5.4 持久化隔离 history，结束 session，只返回摘要文本
+
+文件：`src/core/orchestrator.py:863-884`
+
+```python
+        logger.debug(f"Sub Agent {sub_agent_name} Final Answer: {final_answer_text}")
+
+        self.task_log.sub_agent_message_history_sessions[
+            self.task_log.current_sub_agent_session_id
+        ] = {"system_prompt": system_prompt, "message_history": message_history}  # type: ignore
+        self.task_log.save()
+
+        # Record sub-agent cumulative usage
+        usage_log = self.sub_agent_llm_client.get_usage_log()
+        self.task_log.log_step(
+            "usage_calculation",
+            usage_log,
+            metadata={"session_id": self.task_log.current_sub_agent_session_id},
+        )
+
+        self.task_log.end_sub_agent_session(sub_agent_name)
+        self.task_log.log_step(
+            "sub_agent_completed", f"Sub agent {sub_agent_name} completed", "info"
+        )
+
+        # Return final answer instead of dialogue log, so main agent can use directly
+        return final_answer_text
+```
+
+Sub 的完整对话保存在 `sub_agent_message_history_sessions[session_id]`，便于追踪和审计；函数边界却只 `return final_answer_text`。Main 收到的是 summary 文本，不是 Sub 的完整消息历史、原始工具日志或共享可变 history。
+
+### 5.5 `session_id` 的生成规则
+
+文件：`src/logging/task_tracer.py:68-84`
+
+```python
+    def start_sub_agent_session(
+        self, sub_agent_name: str, subtask_description: str
+    ) -> str:
+        """Start a new sub-agent session"""
+        self.sub_agent_counter += 1
+        session_id = f"{sub_agent_name}_{self.sub_agent_counter}"
+        self.current_sub_agent_session_id = session_id
+
+        # record sub-agent session start
+        self.log_step(
+            f"sub_{sub_agent_name}_session_start",
+            f"Starting {session_id} for subtask: {subtask_description[:100]}{'...' if len(subtask_description) > 100 else ''}",
+            "info",
+            metadata={"session_id": session_id, "subtask": subtask_description},
+        )
+
+        return session_id
+```
+
+规则是「`sub_agent_name` + 下划线 + 任务内递增计数器」，例如 `agent-worker_1`、`agent-worker_2`。计数器先自增，再更新 `current_sub_agent_session_id`，并把 session ID 与完整 subtask 写入日志 metadata。
+
+### 隔离与信息传递的边界
+
+1. **隔离单元**：每次委派都有独立 session、从零创建的 Sub `message_history`、角色专属 prompt/tool definitions、独立用量统计；完整记录按 session 保存。
+2. **回传契约**：`run_sub_agent` 返回的是 `final_answer_text` 摘要，Main 把它当成一次普通工具调用结果写回自己的 history。
+3. **信息缺失的解决方式**：因为 Sub 不继承 Main 全历史，Main 必须在 `subtask` 中写全必要背景、目标、输入、约束和期望输出；正确方向不是把 Main 的全部 history 无差别塞给 Sub，否则会破坏隔离、扩大上下文并引入无关信息。
+
+### 面试时怎么说
+
+> `run_sub_agent` 是一个完整但隔离的 Agent 运行时：它新建 session 和 message history，加载角色专属 prompt 与工具集，再运行与 Main 同构的 LLM—Tool 循环。即使达到轮次上限或中途失败，也会基于已有 history 尝试做 final summary。完整子对话按 session 落盘用于审计，但回给 Main 的只有摘要文本，所以委派边界清晰、上下文可控。
+
+### 易踩坑
+
+- 不要说 Sub 继承 Main 全部 history；源码从 `task_description` 新建单条 user message。
+- 不要把 `sub_agent_message_history_sessions` 说成 Main 的推理输入；它是按 session 持久化的追踪记录。
+- 不要说失败就没有输出；失败标记会传给 summary 逻辑，仍会尝试整理已有结果。
+- 不要把摘要回传误说成原始工具结果透传；函数注释明确写着返回 final answer，而不是 dialogue log。
 
 ## 6. 调用链精读⑤：主 Agent final summary
 
