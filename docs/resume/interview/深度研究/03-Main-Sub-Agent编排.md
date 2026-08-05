@@ -523,6 +523,7 @@ def expose_sub_agents_as_tools(sub_agents_cfg: DictConfig):
 
 **下一跳：** §5 进入 `run_sub_agent`，查看子会话怎样建立独立 history、执行自己的 LLM—Tool 循环并只向 Main 回传摘要。
 
+<a id="5-调用链精读run_sub_agent"></a>
 ## 5. 调用链精读④：`run_sub_agent`
 
 ### 5.1 建立隔离单元：新 session、新 history、自己的工具集
@@ -1051,6 +1052,7 @@ Main 与 Sub 也都按自己的 `max_tool_calls_per_turn` 对本轮工具调用�
 - 不要说达到 `max_turns` 后完全无输出；实现仍尝试 final summary。
 - 不要把标本参数包装成线上最佳实践；缺少业务压测和成本数据时，只能称为配置示例。
 
+<a id="8-专节顺序执行-vs-简历并发"></a>
 ## 8. 专节：顺序执行 vs 简历「并发」
 
 ### 8.1 标本证据：单题内顺序调度
@@ -1166,8 +1168,59 @@ async def execute_independent_calls(calls, max_concurrent):
 
 ## 9. 面试题索引（E13–E16）
 
-（任务 6 填充）
+模型追问 B4 的口径是：Main/Sub 的 `llm` 配置块分开，说明架构**支持**异构；当前 pipeline 复用首个 Sub Agent 的 LLMClient，不能说已在线上实现逐角色异构。详见本文 [§1.3](#13-配置骨架标本示例非业务最优)。
+
+<a id="e13-子会话隔离具体怎么做信息缺失怎么办"></a>
+### E13. 子会话隔离具体怎么做？信息缺失怎么办？
+
+- **第一句：** 主 Agent 不把完整对话历史复制给子 Agent，而是把子任务描述作为新会话的首条消息；每次调用都有独立的 session ID 和 message history，子 Agent 最终只把摘要报告回传主会话，从而控制上下文膨胀。
+- **要点：**
+  - 配置中的子 Agent 会先暴露成主 Agent 可调用的工具；主 Agent 选中后，`run_sub_agent()` 调用 `start_sub_agent_session()` 创建新会话，并以子任务描述初始化独立的 `message_history`。
+  - `TaskTracer` 分开保存 `main_agent_message_history` 和按 session ID 索引的 `sub_agent_message_history_sessions`，既隔离推理上下文，也保留分会话追踪能力。
+  - 隔离的代价是子 Agent 看不到主会话里的隐含条件。解决方式不是重新塞入全部历史，而是要求主 Agent 在委派时写全目标、范围、输入事实、输出要求和约束；若仍缺信息，再由主 Agent 补充描述后重派。
+- **易踩坑：** 把隔离说成子 Agent 共享主 Agent 全量上下文，或只讲节省 Token、不承认任务描述不完整会导致误判。
+- **回看标本 + 详见：** `src/core/orchestrator.py` 的 `run_sub_agent()` 初始化独立 `message_history`；`src/logging/task_tracer.py` 的 `start_sub_agent_session()` 和 `sub_agent_message_history_sessions` 维护分会话记录。详见本文 [§5](#5-调用链精读run_sub_agent)，尤其是 §5.1、§5.4 与 §5.5 的 `task_tracer` 摘录。
+
+<a id="e14-子任务怎么分配最多同时跑几个"></a>
+### E14. 子任务怎么分配？最多同时跑几个？
+
+- **第一句：** 子任务由主 Agent 根据问题和可用子 Agent 的工具描述动态拆分、调度，不是把每类问题写死给固定角色；并发上限必须由运行配置和执行器共同约束，我不会把「每轮工具调用上限」直接当成「同时并发数」。
+- **要点：**
+  - `expose_sub_agents_as_tools()` 将每个子 Agent 的名称、能力描述和入参暴露给主 Agent，主 Agent 在推理过程中决定是否调用、调用哪个以及传入什么任务描述。
+  - 主 Agent 可在一轮提出多个子任务，但标本的主循环当前对 tool call 逐个执行；因此它展示了 Main–Sub 调度边界，并不能证明这些调用已并行执行。业务侧若并发化，只应并行无依赖子任务，并设置全局并发、超时和异常隔离。
+  - 上限分两层：`max_turns` 限制 Agent 循环深度，`max_tool_calls_per_turn` 限制单轮接收的工具调用数。以读过的 qwen37plus 示例为准，主 Agent `max_turns=20`、`max_tool_calls_per_turn=10`；后者是单轮调用上限，不是同时运行 10 个子 Agent。
+- **易踩坑：** 临场编造固定并发数，把配置中的 `10` 说成并发度，或声称标本已用 `asyncio.gather()` 并行执行子 Agent。
+- **回看标本 + 详见：** `src/utils/tool_utils.py` 的 `expose_sub_agents_as_tools()` 生成子 Agent 工具定义；`src/core/orchestrator.py` 的主循环按工具调用动态调度且当前顺序执行；`config/agent_llm_qwen37plus.yaml` 配置轮次和单轮工具调用上限。详见本文 [§3](#3-调用链精读子-agent-工具化)、[§4](#4-调用链精读主循环) 与 [§8](#8-专节顺序执行-vs-简历并发)；多题并行及异常隔离细节见 [`02` G22](./02-面试问答.md#g22-并发数一般设多少一个任务挂了会影响其他任务吗)。
+
+<a id="e15-主-agent-如何汇总子-agent-质量差怎么办"></a>
+### E15. 主 Agent 如何汇总？子 Agent 质量差怎么办？
+
+- **第一句：** 子 Agent 不把原始 tool dump 整包塞回主会话，而是在独立会话内先生成摘要报告，再作为一次工具结果回传；主 Agent 基于各报告的结论、证据和不确定性做二次汇总。
+- **要点：**
+  - 标本返回的是自然语言 summary，不是强制 JSON schema；工程上我更关注逻辑结构稳定，包括子任务结论、支持证据、来源、未解决冲突和置信度，而不是把所有中间调用细节复制给主 Agent。
+  - 子 Agent 达到轮次上限或部分工具失败后仍会尝试基于已有上下文生成 summary，并在日志中保留失败状态；主 Agent 汇总时应区分「有证据的结论」和「未完成的候选」。
+  - 如果报告答非所问、证据不足或彼此冲突，主 Agent 可以收紧任务描述后重派，或换子任务/工具补证；若预算或轮次不足，则保留不确定性并降低最终结论置信度，而不是强行拼成确定答案。
+- **易踩坑：** 声称已有代码级 JSON 强校验或自动质量评分，或把低质量子报告未经核验直接写入最终结论。
+- **回看标本 + 详见：** `src/core/orchestrator.py` 的 `run_sub_agent()` 先生成 `sub_agent_final_summary`，再将 `final_answer_text` 作为工具结果交回主循环；主 Agent 最后执行 final summary。详见本文 [§5.3–§5.4](#53-即使失败或耗尽轮次也尝试生成最终摘要) 与 [§6](#6-调用链精读主-agent-final-summary)。
+
+<a id="e16-模块是谁做的花了多久"></a>
+### E16. 模块是谁做的？花了多久？
+
+- **第一句：** 我从 0-1 负责深度研究服务的工程落地，基础来自业余参加阿里云 Research Agent 比赛时的实现，实习期再魔改接入 Data Agent；算法博士后提供 Prompt 调优和评测方法咨询，不主导开发。
+- **要点：**
+  - 我的职责包括编排运行时、工具接入、服务化、追踪与熔断，以及与 Java 查数主链路和领域知识库的衔接。
+  - 时间口径只讲「业余比赛基础 + 实习期工程化接入」两个阶段；没有可核对记录时，不拆成精确人天，也不虚构 Prompt 与工程代码的百分比分配。
+  - 贡献重点是把比赛原型变成不阻断主链路、可追踪、可回退的业务能力，不把 Prompt / 评测咨询说成自己独立完成，也不把开源标本说成自己的原创框架。
+- **易踩坑：** 说成博士后带队共同开发，临场给出无法核对的工期占比，或把比赛原型与业务上线版本混为一谈。
+- **回看标本 + 详见：** 职责与来源回看本文 [§0.3](#03-诚实边界总表) 以及 [`02` §0.1](./02-面试问答.md#01-职责与来源)；工程编排细节回看 `src/core/orchestrator.py`，不把标本代码直接认领为个人原创。
 
 ## 10. 回看清单
 
-（任务 6 填充）
+按以下顺序回看，先掌握配置和装配，再沿 Main→Sub 调用链下钻，最后对照题目级并行：
+
+1. `config/agent_llm_qwen37plus.yaml`：Main/Sub 的 LLM、工具和两层预算。
+2. `src/core/pipeline.py`：`create_pipeline_components` 与 `execute_task_pipeline`。
+3. `src/utils/tool_utils.py` + `config/agent_prompts/sub_worker.py`：子 Agent 如何暴露成工具，以及委派描述契约。
+4. `src/core/orchestrator.py`：先看 `run_main_agent` 的 tool 段，再看 `run_sub_agent` 的独立会话、子循环与摘要回传。
+5. `src/logging/task_tracer.py`：`session_id`、主/子 history 分存与 session 生命周期。
+6. 对比 `common_benchmark.py` 的 `run_parallel_inference`：确认 `Semaphore + gather` 控制的是多题并行，不是单题内子 Agent 并发。
