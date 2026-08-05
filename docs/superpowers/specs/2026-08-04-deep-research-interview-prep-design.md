@@ -94,6 +94,10 @@
 | 失败定义与静默回退 | D10–D11 | pipeline/orchestrator 超时与错误路径（**不报失败率**） |
 | Main-Sub 编排 | E13–E15 | orchestrator 主循环、子 Agent 作为工具、会话隔离 |
 | Hybrid Search + MCP | F17–F18 | `src/retrieval/`、hybrid-search 工具、MCP tool manager |
+
+> **拆分更新（2026-08-05）：** Main-Sub Agent 编排的调用链精读与 E13–E16 详答已拆至
+> `docs/superpowers/specs/2026-08-05-main-sub-agent-deep-dive-design.md` 与
+> `docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`；本规格不再作为该主题的唯一正文来源。
 | 工程化：追踪 / 并发 / 熔断 / 断点续跑 | G21–G24 | TaskTracer、max_turns / max_tool_calls、日志续跑 |
 
 ### 4.2 L2（够用即可）
