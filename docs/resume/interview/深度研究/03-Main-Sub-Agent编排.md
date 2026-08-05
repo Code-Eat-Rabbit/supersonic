@@ -1120,7 +1120,7 @@ Main 与 Sub 也都按自己的 `max_tool_calls_per_turn` 对本轮工具调用�
         )
 ```
 
-但并行单元是 `tasks` 列表中的**多道 benchmark 题目**：每道题调用一次 `run_single_task`，`max_concurrent` 限制同时运行的题目数，`return_exceptions=True` 防止一道题异常直接取消整批任务。它不能证明某一道题内部同时运行了多个子 Agent。
+但并行单元是 `tasks` 列表中的**多道 benchmark 题目**：每道题调用一次 `run_single_task`，`max_concurrent` 限制同时运行的题目数，`return_exceptions=True` 让单题异常作为结果返回而不是直接向外抛出，便于逐题转成失败结果；默认 gather 也不会自动 cancel 其他已在跑的任务。它不能证明某一道题内部同时运行了多个子 Agent。
 
 换句话说，两处代码控制的是不同层级：
 
