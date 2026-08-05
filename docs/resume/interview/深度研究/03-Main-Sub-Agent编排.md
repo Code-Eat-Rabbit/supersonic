@@ -3,7 +3,7 @@
 > 对应简历：问数结果深度研究 · 第二点（Main–Sub Agent 编排）
 > 题纲：[`../面试题纲.md`](../面试题纲.md) § 三 E13–E16
 > 索引本：[`02-面试问答.md`](./02-面试问答.md)（E 节已迁出至本文）
-> 设计规格：[`../../superpowers/specs/2026-08-05-main-sub-agent-deep-dive-design.md`](../../superpowers/specs/2026-08-05-main-sub-agent-deep-dive-design.md)
+> 设计规格：[`../../../superpowers/specs/2026-08-05-main-sub-agent-deep-dive-design.md`](../../../superpowers/specs/2026-08-05-main-sub-agent-deep-dive-design.md)
 > 复习标本：`miro-flow-solution`（对齐工程细节；面试不主动对比 MiroFlow，不宣称「我发明框架」）
 
 ---
