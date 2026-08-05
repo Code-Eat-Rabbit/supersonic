@@ -63,7 +63,11 @@ flowchart TD
 
 ### 1.3 配置骨架（标本示例，非业务最优）
 
-以 `config/agent_llm_qwen37plus.yaml` 为准列出 Main/Sub 的 `llm`、`tool_config`、`max_turns`、`max_tool_calls_per_turn`；注明 Main/Sub llm 块分开故**支持**异构，GAIA 示例通常同模。
+标本中 Main 配置为 `max_turns=20`、`max_tool_calls_per_turn=10`，只挂载 `tool-reasoning` 等偏轻工具，专注规划、委派与汇总。
+Sub `agent-worker` 配置为 `max_turns=50`、`max_tool_calls_per_turn=10`，持有 searching、reading、code 等更重的执行工具。
+Main/Sub 的 `llm` 配置块彼此分开，因此配置结构**支持**异构模型；GAIA 示例通常为 Main/Sub 配置同一模型。
+但如 [§2.3](#23-execute_task_pipeline运行时入口完成-llm-与-orchestrator-装配) 所示，当前 pipeline 常复用首个 Sub 的 LLM client，配置支持不等于多个 Sub 已各自实例化不同 client。
+以上参数仅是便于精读控制流的标本示例，并非经过业务压测得出的最优配置。
 
 ---
 

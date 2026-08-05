@@ -49,7 +49,7 @@
 **文件：**
 - 创建：`docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`
 
-- [ ] **步骤 1：创建文件并写入头部、目录、§0、§1（可直接粘贴后按需微调）**
+- [x] **步骤 1：创建文件并写入头部、目录、§0、§1（可直接粘贴后按需微调）**
 
 ```markdown
 # Main–Sub Agent 编排 — 代码精读与面试深挖
@@ -158,7 +158,7 @@ flowchart TD
 （任务 6 填充）
 ```
 
-- [ ] **步骤 2：确认文件存在且 §0/§1 关键表齐全**
+- [x] **步骤 2：确认文件存在且 §0/§1 关键表齐全**
 
 运行：
 
@@ -170,7 +170,7 @@ rg -n "诚实边界总表|一次任务数据流|agent-worker|max_turns" \
 
 预期：文件存在；上述关键词均有命中。
 
-- [ ] **步骤 3：Commit**
+- [x] **步骤 3：Commit**
 
 ```bash
 git add docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md
@@ -190,7 +190,7 @@ EOF
 - 修改：`docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`
 - 只读标本：`pipeline.py`、`tool_utils.py`、`sub_worker.py`、`agent_llm_qwen37plus.yaml`
 
-- [ ] **步骤 1：打开标本，核对行号后写入 §2**
+- [x] **步骤 1：打开标本，核对行号后写入 §2**
 
 §2 必须包含：
 
@@ -202,7 +202,7 @@ EOF
 
 每段代码用 fenced block，并在块前用一行注明 `文件:行号`。
 
-- [ ] **步骤 2：写入 §3 工具化**
+- [x] **步骤 2：写入 §3 工具化**
 
 §3 必须包含：
 
@@ -212,7 +212,7 @@ EOF
 4. 「面试时怎么说」：子 Agent = 可调用工具，动态委派不是写死路由表。
 5. 「易踩坑」：不要把 expose 说成子 Agent 共享主 history。
 
-- [ ] **步骤 3：验证 §2/§3 含关键符号**
+- [x] **步骤 3：验证 §2/§3 含关键符号**
 
 运行：
 
@@ -223,7 +223,7 @@ rg -n "create_pipeline_components|expose_sub_agents_as_tools|expose_agent_as_too
 
 预期：均有命中；且正文出现「面试时怎么说」「易踩坑」。
 
-- [ ] **步骤 4：Commit**
+- [x] **步骤 4：Commit**
 
 ```bash
 git add docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md
@@ -243,7 +243,7 @@ EOF
 - 修改：`docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`
 - 只读标本：`orchestrator.py`、`task_tracer.py`
 
-- [ ] **步骤 1：写入 §4 主循环**
+- [x] **步骤 1：写入 §4 主循环**
 
 必须钉死并贴码：
 
@@ -256,7 +256,7 @@ EOF
 4. 「面试时怎么说」+「易踩坑」（禁止声称标本已 gather）。
 5. 下一跳 → §5。
 
-- [ ] **步骤 2：写入 §5 `run_sub_agent`**
+- [x] **步骤 2：写入 §5 `run_sub_agent`**
 
 将近全文分段粘贴（建议四段，中间不省略关键分支）：
 
@@ -269,7 +269,7 @@ EOF
 
 旁注必须覆盖：隔离单元；回传是 summary 文本；信息缺失靠主 Agent 写全任务描述而非塞全历史。
 
-- [ ] **步骤 3：验证顺序执行证据与 session 字段出现在正文**
+- [x] **步骤 3：验证顺序执行证据与 session 字段出现在正文**
 
 运行：
 
@@ -280,7 +280,7 @@ rg -n "in sequence|run_sub_agent|start_sub_agent_session|sub_agent_message_histo
 
 预期：全部命中；且存在字面 `Execute tool calls (in sequence)` 或等价中英对照指出顺序执行。
 
-- [ ] **步骤 4：Commit**
+- [x] **步骤 4：Commit**
 
 ```bash
 git add docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md
@@ -300,7 +300,7 @@ EOF
 - 修改：`docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`
 - 只读标本：`orchestrator.py`（final summary 段）、`agent_llm_qwen37plus.yaml`
 
-- [ ] **步骤 1：写入 §6**
+- [x] **步骤 1：写入 §6**
 
 必须包含：
 
@@ -310,7 +310,7 @@ EOF
 4. 质量差处理口径：重派 / 补证 / 降置信——无自动打分器。
 5. 「面试时怎么说」+「易踩坑」。
 
-- [ ] **步骤 2：写入 §7**
+- [x] **步骤 2：写入 §7**
 
 必须包含：
 
@@ -320,7 +320,7 @@ EOF
 4. 交叉引用：完整 G23 题仍见 `02`；本文只讲 Main-Sub 相关。
 5. 「面试时怎么说」：20/10 不是未经实测的线上最优。
 
-- [ ] **步骤 3：验证**
+- [x] **步骤 3：验证**
 
 运行：
 
@@ -331,7 +331,7 @@ rg -n "_handle_summary_with_context_limit_retry|task_failed|max_turns|tool_calls
 
 预期：均有命中；出现否定「JSON schema 强校验」的表述。
 
-- [ ] **步骤 4：Commit**
+- [x] **步骤 4：Commit**
 
 ```bash
 git add docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md
@@ -351,7 +351,7 @@ EOF
 - 修改：`docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`
 - 只读标本：`orchestrator.py` ~L1110；`common_benchmark.py` `run_parallel_inference`
 
-- [ ] **步骤 1：按规格四段写满 §8**
+- [x] **步骤 1：按规格四段写满 §8**
 
 固定结构（标题可微调，内容不可缺）：
 
@@ -372,7 +372,7 @@ EOF
 （asyncio.gather 伪代码草图 10–20 行即可；明确「未在标本落地 / 本准备文档不改代码」）
 ```
 
-- [ ] **步骤 2：验证禁止越界词与必备口径**
+- [x] **步骤 2：验证禁止越界词与必备口径**
 
 运行：
 
@@ -386,7 +386,7 @@ rg -n "标本已用 asyncio.gather|已经并行执行子 Agent" \
 
 预期：第一组全命中；第二组无命中（或仅出现在「不要说…」的反例句中）。
 
-- [ ] **步骤 3：Commit**
+- [x] **步骤 3：Commit**
 
 ```bash
 git add docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md
@@ -406,7 +406,7 @@ EOF
 - 修改：`docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`
 - 只读来源：`02-面试问答.md` 原 E13–E16 正文（约 L192–232）
 
-- [ ] **步骤 1：把 E13–E16 迁入 §9，并为每题增加「详见」链接**
+- [x] **步骤 1：把 E13–E16 迁入 §9，并为每题增加「详见」链接**
 
 要求：
 
@@ -427,7 +427,7 @@ EOF
 | E15 | §5 回传 + §6 |
 | E16 | §0.3 + `02` §0.1 职责（本文重复 L0 一句即可） |
 
-- [ ] **步骤 2：写 §10 回看清单**
+- [x] **步骤 2：写 §10 回看清单**
 
 按阅读顺序列出：
 
@@ -438,7 +438,7 @@ EOF
 5. `src/logging/task_tracer.py`（session 字段）
 6. （对比）`common_benchmark.py` `run_parallel_inference`
 
-- [ ] **步骤 3：验证四题锚点存在**
+- [x] **步骤 3：验证四题锚点存在**
 
 运行：
 
@@ -449,7 +449,7 @@ rg -n "E13|E14|E15|E16|第一句|详见" \
 
 预期：四题均有「第一句」；均有「详见」。
 
-- [ ] **步骤 4：Commit**
+- [x] **步骤 4：Commit**
 
 ```bash
 git add docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md
@@ -468,7 +468,7 @@ EOF
 **文件：**
 - 修改：`docs/resume/interview/深度研究/02-面试问答.md`
 
-- [ ] **步骤 1：更新文首配套链接**
+- [x] **步骤 1：更新文首配套链接**
 
 在文首引用块增加一行（保持现有链接风格）：
 
@@ -476,7 +476,7 @@ EOF
 > Main-Sub 精读：[`03-Main-Sub-Agent编排.md`](./03-Main-Sub-Agent编排.md)
 ```
 
-- [ ] **步骤 2：用下列索引块替换原「### E. Main-Sub Agent 编排」整段（含 E13–E16 正文，直到 `### F.` 之前）**
+- [x] **步骤 2：用下列索引块替换原「### E. Main-Sub Agent 编排」整段（含 E13–E16 正文，直到 `### F.` 之前）**
 
 ```markdown
 ### E. Main-Sub Agent 编排
@@ -495,13 +495,13 @@ EOF
 
 注意：若 `03` 最终标题 slug 与上表锚点不一致，以实现后 `03` 实际锚点为准修正链接（GitHub/常见 Markdown 对中文标题的 slug 规则可能不同；可用在 `03` 题目标题下显式加 `<a id="e13-..."></a>` 保证稳定）。
 
-- [ ] **步骤 3：改 L2-E16 与 §5 对照表**
+- [x] **步骤 3：改 L2-E16 与 §5 对照表**
 
 将 `### 3.3 E16` 中「详答回看 [E16](#e16-...)」改为指向 `03` 的 E16。
 
 将 §5 表中三-E13…E16 四行的「文档锚点」列改为链接 `03` 对应题（层与标本路径可保留）。
 
-- [ ] **步骤 4：验证 `02` 不再含 E 详答长文**
+- [x] **步骤 4：验证 `02` 不再含 E 详答长文**
 
 运行：
 
@@ -514,7 +514,7 @@ rg -n "run_sub_agent\(\) 调用 \`start_sub_agent_session" \
 
 预期：无 `#### E13` 级详答标题；有多处 `03-Main-Sub-Agent编排`；原 E13 长要点句不再出现在 `02`。
 
-- [ ] **步骤 5：Commit**
+- [x] **步骤 5：Commit**
 
 ```bash
 git add docs/resume/interview/深度研究/02-面试问答.md
@@ -534,7 +534,7 @@ EOF
 - 修改：`docs/resume/interview/面试题纲.md`
 - 修改：`docs/superpowers/specs/2026-08-04-deep-research-interview-prep-design.md`
 
-- [ ] **步骤 1：在题纲 E 节标题下增加一行指针（不改编题干）**
+- [x] **步骤 1：在题纲 E 节标题下增加一行指针（不改编题干）**
 
 定位 `E. Main-Sub Agent 编排`（约 L225），在标题行后插入：
 
@@ -544,7 +544,7 @@ EOF
 
 题干 13–16 保持不变。
 
-- [ ] **步骤 2：在 2026-08-04 规格增加拆分说明**
+- [x] **步骤 2：在 2026-08-04 规格增加拆分说明**
 
 在该文件「## 1. 背景与目标」或「## 4. L1 / L2 范围」的 Main-Sub 行附近增加：
 
@@ -554,7 +554,7 @@ EOF
 > `docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`；本规格不再作为该主题的唯一正文来源。
 ```
 
-- [ ] **步骤 3：验证**
+- [x] **步骤 3：验证**
 
 运行：
 
@@ -565,7 +565,7 @@ rg -n "03-Main-Sub-Agent编排" "docs/resume/interview/面试题纲.md" \
 
 预期：两个文件均命中。
 
-- [ ] **步骤 4：Commit**
+- [x] **步骤 4：Commit**
 
 ```bash
 git add docs/resume/interview/面试题纲.md \
@@ -585,7 +585,7 @@ EOF
 **文件：**
 - 只读：`03`、`02`、规格
 
-- [ ] **步骤 1：跑验收命令清单**
+- [x] **步骤 1：跑验收命令清单**
 
 ```bash
 DOC="docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md"
@@ -618,11 +618,11 @@ wc -l "$DOC"
 - (4) 若命中，确认只是交叉引用一句而非展开专章；否则删改。
 - (6) `wc -l` 建议 ≥ 400（精读目标）；若显著偏短，回到任务 3/5 补贴码。
 
-- [ ] **步骤 2：人工口述检查（执行者自问）**
+- [x] **步骤 2：人工口述检查（执行者自问）**
 
 不看源码，能否按 §2→§6 讲完一次委派？被问「同时跑几个」能否指向 §8？若不能，补对应节的「面试时怎么说」。
 
-- [ ] **步骤 3：若有修正则 commit**
+- [x] **步骤 3：若有修正则 commit**
 
 ```bash
 git add docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md \
