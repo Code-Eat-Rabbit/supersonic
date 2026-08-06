@@ -983,7 +983,7 @@ final_answer_text = await self._handle_summary_with_context_limit_retry(
   - 主 Agent 可在一轮提出多个子任务，但标本的主循环当前对 tool call 逐个执行；因此它展示了 Main–Sub 调度边界，并不能证明这些调用已并行执行。业务侧若并发化，只应并行无依赖子任务，并设置全局并发、超时和异常隔离。
   - 上限分两层：`max_turns` 限制 Agent 循环深度，`max_tool_calls_per_turn` 限制单轮接收的工具调用数。以读过的 qwen37plus 示例为准，主 Agent `max_turns=20`、`max_tool_calls_per_turn=10`；后者是单轮调用上限，不是同时运行 10 个子 Agent。
 - **易踩坑：** 临场编造固定并发数，把配置中的 `10` 说成并发度，或声称标本已用 `asyncio.gather()` 并行执行子 Agent。
-- **回看标本 + 详见：** 委派大纲与 Main 计划结构见本文 [§4](#4-prompt-精读计划任务分发与收束)；`expose_sub_agents_as_tools()` 见 [§2.3](#23-expose_sub_agents_as_tools把配置项转换为工具定义)；主循环顺序执行见 [§3](#3-调用链精读主循环) 与 [§9](#9-专节顺序执行-vs-简历并发)；G22 多题并行及异常隔离、G23 预算追问见 [`05` §3](./05-工程化能力.md#3-预算熔断--两类并发g22g23)（[`G22`](./05-工程化能力.md#g22-并发数一般设多少一个任务挂了会影响其他任务吗) / [`G23`](./05-工程化能力.md#g23-max_turns-和-max_tool_calls_per_turn-怎么设会截断正常任务吗)）。
+- **回看标本 + 详见：** 委派大纲与 Main 计划结构见本文 [§4](#4-prompt-精读计划任务分发与收束)；`expose_sub_agents_as_tools()` 见 [§2.3](#23-expose_sub_agents_as_tools调用点与做什么)；主循环顺序执行见 [§3](#3-调用链精读主循环) 与 [§9](#9-专节顺序执行-vs-简历并发)；G22 多题并行及异常隔离、G23 预算追问见 [`05` §3](./05-工程化能力.md#3-预算熔断--两类并发g22g23)（[`G22`](./05-工程化能力.md#g22-并发数一般设多少一个任务挂了会影响其他任务吗) / [`G23`](./05-工程化能力.md#g23-max_turns-和-max_tool_calls_per_turn-怎么设会截断正常任务吗)）。
 
 <a id="e15-主-agent-如何汇总子-agent-质量差怎么办"></a>
 ### E15. 主 Agent 如何汇总？子 Agent 质量差怎么办？
