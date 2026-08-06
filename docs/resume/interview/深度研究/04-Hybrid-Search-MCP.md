@@ -4,7 +4,7 @@
 > 题纲：[`../面试题纲.md`](../面试题纲.md) § 三 F17–F20
 > 索引本：[`02-面试问答.md`](./02-面试问答.md)（F 节已迁出至本文）
 > 上一章：[`03-Main-Sub-Agent编排.md`](./03-Main-Sub-Agent编排.md)
-> 设计规格：[`../../superpowers/specs/2026-08-06-hybrid-search-and-engineering-interview-prep-design.md`](../../superpowers/specs/2026-08-06-hybrid-search-and-engineering-interview-prep-design.md)
+> 设计规格：[`../../../superpowers/specs/2026-08-06-hybrid-search-and-engineering-interview-prep-design.md`](../../../superpowers/specs/2026-08-06-hybrid-search-and-engineering-interview-prep-design.md)
 > 复习标本：`miro-flow-solution`（对齐工程细节；面试不主动对比 MiroFlow，不宣称「我发明框架」）
 
 ---

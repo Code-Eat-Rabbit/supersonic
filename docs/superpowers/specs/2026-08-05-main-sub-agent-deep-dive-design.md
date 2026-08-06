@@ -30,6 +30,7 @@
 - 不写 Hybrid Search 路由/融合细节（归后续 F 专项）。
 - 不写 MCP 工具成功率 98% 统计定义（归 F18）。
 - 不写 GAIA 断点续跑与多题并行评测全文（归 G24 / G22；本文仅在并发专节对比「多题并行 ≠ 单题内并行」）。
+- **预算/并发权威详解改归 `05-工程化能力.md`**（及 `2026-08-06-hybrid-search-and-engineering-interview-prep-design.md`）；本规格对应的 `03` §8–§9 仅为编排侧短指针。
 - 不写 Java↔Python 集成契约（归 `01-集成设计.md`）。
 - 不写完整 TaskTracer 回放教程（归 G21；本文只覆盖 Main-Sub 用到的 session / history 字段）。
 - 不把「业务侧子 Agent 并行化」写成必须落地的代码改造；最多伪代码级演进草图。

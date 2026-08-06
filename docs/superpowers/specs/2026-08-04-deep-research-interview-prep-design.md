@@ -99,6 +99,10 @@
 > **拆分更新（2026-08-05）：** Main-Sub Agent 编排的调用链精读与 E13–E16 详答已拆至
 > `docs/superpowers/specs/2026-08-05-main-sub-agent-deep-dive-design.md` 与
 > `docs/resume/interview/深度研究/03-Main-Sub-Agent编排.md`；本规格不再作为该主题的唯一正文来源。
+>
+> **拆分更新（2026-08-06）：** Hybrid Search + MCP（F17–F20）与工程化（G21–G24）
+> 深挖已拆至 `2026-08-06-hybrid-search-and-engineering-interview-prep-design.md`
+> 与 `深度研究/04-Hybrid-Search-MCP.md`、`深度研究/05-工程化能力.md`。
 
 ### 4.2 L2（够用即可）
 
