@@ -86,7 +86,7 @@ main_agent:
     - tool-searching
   retrieval:
     mode: "${oc.env:RETRIEVAL_MODE,auto}"
-    router:
+    router:                    # 文档/对齐用；装配链未注入子进程
       local_weight: 0.6
       web_weight: 0.4
 ```
@@ -110,7 +110,7 @@ for tool in agent_cfg["tool_config"]:
 
 - **一条 yaml = 一个 MCP Server 注册项**：Agent `tool_config` 引用后，由 `create_mcp_server_parameters` 加载，`ToolManager` 按配置拉起 stdio 子进程。`name` 即 LLM 调用时的 `server_name`。
 - **SSE / URL 诚实边界**：`ToolManager` 类本身在 `execute_tool_call` / `get_all_tool_definitions` 里**能**接受 `http(s)://...` 字符串并走 `sse_client`；但当前 Hydra `tool-*.yaml` → `create_mcp_server_parameters` 路径**未接 URL/SSE**——只产出 `StdioServerParameters`。面试不要说「tool yaml 可配 URL/SSE」；若需远程 MCP，得改装配代码或手工注入 URL 型 `params`。
-- Hybrid Search 额外把 Agent 级 `retrieval.mode` 注入子进程环境，与 §3 路由对齐。
+- Hybrid Search 额外把 Agent 级 `retrieval.mode` 注入子进程环境（`RETRIEVAL_MODE`），与 §3 路由对齐。**权重不走这条链**：`retrieval.router.local_weight` / `web_weight` 在 `create_mcp_server_parameters` 中**未被读取**；MCP 子进程启动时读的是 `tool-hybrid-search.yaml` 的 `env.RETRIEVAL_LOCAL_WEIGHT` / `RETRIEVAL_WEB_WEIGHT`（默认 0.6 / 0.4）。Agent YAML 里的 router 权重仅作配置对齐参考，改它**不会**自动覆盖融合权重，除非同步改 tool yaml 或 OS 环境变量。
 - Main / Sub **各自** `tool_config` + `tool_blacklist` → 各自 `ToolManager`，工具面可不同（GAIA 标本 Sub 挂 searching/reading/code，业务 `agent_server` Main 挂 hybrid-search）。
 
 ### 2.3 发现：`get_all_tool_definitions`
@@ -264,7 +264,7 @@ if tool_name == "scrape" and "unhandled errors" in error_message and arguments.g
 读到这里应已知（来自 §2）：
 
 1. `tool-hybrid-search` 经 YAML 注册为 stdio MCP Server，`ToolManager.execute_tool_call` 统一调 `hybrid_search`。
-2. Agent 级 `retrieval.mode` / 权重经 `create_mcp_server_parameters` 注入子进程环境变量。
+2. Agent 级 `retrieval.mode` 经 `create_mcp_server_parameters` 注入 `RETRIEVAL_MODE`；融合权重由 tool yaml 环境变量 `RETRIEVAL_LOCAL_WEIGHT` / `RETRIEVAL_WEB_WEIGHT` 提供（§3.5），Agent `retrieval.router` **不覆盖**。
 3. **98%** 指单次工具调用返回可消费内容；Hybrid 一路失败时仍可用另一路或已有证据部分完成（§2.6 三级降级）。
 
 本章从 MCP 入口 `hybrid_search` 往下钻：**路由决策 → 本地 / Web 召回 → 加权融合 → JSON 返回 → Agent 如何把 hit 变成可引用结论**。
@@ -392,7 +392,10 @@ async def search_web(query: str, top_k: int = 5) -> list[SearchHit]
 
 **流程：** 本地 hit × `local_weight`、Web hit × `web_weight` → 合并 → 按 score 降序 → 去重 → 取 Top K（默认 8）。
 
-**去重键：** `hit.url` 非空则用 URL；否则 `f"{hit.source}:{hit.chunk_id}"`——同一文档不同 chunk 可并存。
+**去重键（优先级钉死）：**
+
+1. **`hit.url` 非空** → 以 URL 为 key。列表已按 score 降序，故**同一 URL 只保留最高分那条**；其余 chunk 直接丢弃。本地 ingest 时各 chunk 的 `url` 均设为同一 `source_uri`，因此**同一文档的多 chunk 会撞车**，不会并存。
+2. **`hit.url` 为空** → 退化为 `f"{hit.source}:{hit.chunk_id}"`，不同 chunk 可并存。
 
 ```python
 # src/retrieval/fusion.py · _dedupe + weighted_fusion（L4–31，近全文）
@@ -427,8 +430,9 @@ def weighted_fusion(
 
 旁注：
 
-- **0.6 / 0.4** 是标本默认基线（环境变量 `RETRIEVAL_LOCAL_WEIGHT` / `RETRIEVAL_WEB_WEIGHT`），归一后加权——不是业务最优参数。
-- 融合**原地修改** `hit.score`；去重保留先出现（即分更高）条目。
+- **权重来源（钉死）：** `hybrid_search_mcp_server.py` 模块加载时读 `RETRIEVAL_LOCAL_WEIGHT` / `RETRIEVAL_WEB_WEIGHT`（来自 `tool-hybrid-search.yaml` 的 `env`，默认 0.6 / 0.4）。`create_mcp_server_parameters` **只覆盖** `RETRIEVAL_MODE`，**不**把 Agent `retrieval.router` 写进子进程 env——面试别说「Agent 配置覆盖了融合权重」。
+- **0.6 / 0.4** 是标本默认基线，归一后加权——不是业务最优参数。
+- 融合**原地修改** `hit.score`；去重在 score 降序之后执行，保留**先遇到**（即分更高）条目。
 - 本地 token 重叠分与 Web 排名分**量纲不同**，加权是工程折中，不是信息检索理论最优。
 
 ### 3.6 MCP 返回：`hybrid_search`
@@ -501,18 +505,21 @@ class SearchHit:
 | `url` | `source_uri` | Serper link | **必须尽量带回** |
 | `snippet` | chunk 文本截断 | Serper snippet | **优先摘录原文** |
 | `score` | token 重叠比 × 权重 | 排名分 × 权重 | 排序参考，**≠ 事实置信度** |
-| `chunk_id` | `{task_id}_{i}` | `web_{n}` | 回溯具体块 / 去重键 |
+| `chunk_id` | `{task_id}_{i}` | `web_{n}` | 回溯具体块；**仅 url 为空时**参与去重键 |
 | `metadata` | `overlap_terms` 等 | `position` 等 | 调试 / 交叉验证辅助 |
 
 MCP 外层另含 `route` / `reason` / `mix` / 两路召回计数——Agent 可据此说明「本次 mainly local / 为何 hybrid / Web 是否为空」。
 
 #### 3.7.2 报告层：Prompt + ResearchDirective
 
-**Sub / Main Prompt（标本可核对）：** `sub_worker.py` 要求：
+**Sub / Main Prompt（标本可核对）：** `sub_worker.py` 工作阶段要求：
 
-- 优先 **quote / excerpt 原文**，并 **provide URL if available**；
-- 来源不确定要 flag；冲突信息全部保留并标不一致；
-- 信息不完整仍交 partial excerpts 并标 uncertainty；**禁止猜测**。
+- **Prefer quoting or excerpting original source text**，并 **provide the URL if available**；
+- 来源可信度不确定要 **clearly flag**；冲突信息全部保留并标不一致；
+- 信息不完整仍交 **partial excerpts** 并标 **uncertainty**；
+- **Never assume or guess — if an exact answer cannot be found, say so clearly**（工作阶段口径：有证据优先、缺口明示，而非硬编）。
+
+**Prompt 张力（面试可主动点出）：** 同一文件里，**summarize 阶段**在任务耗尽上下文时会写 *make a well-informed educated guess*——与工作阶段的 *never assume or guess* 并存。面试口径取中间层：**有 hit / 原文就摘录+URL；无证据就声明缺口，不把推测包装成事实**；仅在 summarize 兜底且证据已穷尽时，才允许带标注的推断。
 
 **业务 ResearchDirective（见 [`01` §7.5](./01-集成设计.md#75-researchdirective-type-specific-研究指导-prompt)，交叉引用不整篇复制）：**
 
@@ -543,7 +550,7 @@ Directive 是 **prepend 进 task 的 Markdown 指导**，不是编译期 schema�
 1. Hybrid 是 **一把 MCP 工具**：`hybrid_search` 里先 `route_query`——强制 mode 优先；没本地索引就 web；关键词 hints 分流；默认 hybrid；权重按 mode 归一。
 2. 本地侧 **ingest → chunk → JSON 索引**；`VectorBackend` 只是占位，**现在全回退 LocalIndexStore**，别说生产向量库已上线。
 3. Web 走 Serper；**空 Web 仍可只交本地 fused**；API 挂了返回 `[]`，由 LLM 声明缺口。
-4. 融合 **0.6/0.4 标本基线**，加权排序、URL 或 `source:chunk_id` 去重、Top K。
+4. 融合权重来自 **tool yaml 环境变量**（默认 0.6/0.4），Agent `retrieval.router` 不自动覆盖；加权排序后 **有 url 则按 url 去重（同文档多 chunk 只留最高分）**，url 空才用 `source:chunk_id`，再取 Top K。
 5. 返回 JSON 带 **route/reason/mix/两路计数/results**——LLM 据此写报告；引用靠 hit 字段 + Prompt/Directive，**没有**代码级 schema 强校验。
 
 ### 易踩坑
@@ -554,6 +561,8 @@ Directive 是 **prepend 进 task 的 Markdown 指导**，不是编译期 schema�
 - 把 **`VectorBackend`** 说成 Milvus/PGVector 已生产落地。
 - Web **空列表** 就说 Hybrid 整体失败——local 路可能仍有结果。
 - 把 **自然语言报告里的引用格式** 说成「JSON schema / 脚注校验已落地」——规格与 §1.3 诚实表已钉：无强校验。
-- **编造** 未出现在 `results` 里的 chunk 或 URL——Prompt 禁止，面试也要主动划界。
+- 把 **同一 source_uri 的多 chunk** 说成融合后会并存——有 url 时去重键是 URL，只留最高分那条。
+- 把 **Agent `retrieval.router` 权重** 说成会注入 MCP 子进程——装配链只覆盖 `RETRIEVAL_MODE`。
+- **引用未召回材料** 或把推测当事实——工作 Prompt 要求摘录+URL、缺口明示；面试主动划界，别说「绝对禁止编造」这种过度绝对口径。
 
 **下一跳：** [§4 业务知识库与案例](./04-Hybrid-Search-MCP.md#4-业务落地知识库访谈--清洗研报--f19-金融--行为科学两案例)（待写）
