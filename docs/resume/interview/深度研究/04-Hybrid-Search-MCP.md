@@ -60,7 +60,7 @@
 
 ### 2.2 注册：`tool-*.yaml` → Agent `tool_config`
 
-**配置挂载：** Agent YAML（Main 或 Sub）的 `tool_config` 列表引用 `config/tool/{name}.yaml`；`create_mcp_server_parameters` 逐条加载并转成 `StdioServerParameters`（或 SSE URL），供 `ToolManager` 初始化。
+**配置挂载：** Agent YAML（Main 或 Sub）的 `tool_config` 列表引用 `config/tool/{name}.yaml`；`create_mcp_server_parameters` 逐条加载并**只**转成 `StdioServerParameters`（读 `tool_command` + `args`），供 `ToolManager` 初始化——标本 yaml 装配链走 **stdio 子进程**，不读 `url` 字段。
 
 ```yaml
 # config/tool/tool-hybrid-search.yaml（关键字段）
@@ -108,7 +108,8 @@ for tool in agent_cfg["tool_config"]:
 
 旁注：
 
-- **一条 yaml = 一个 MCP Server 注册项**：Agent `tool_config` 引用后，由 `create_mcp_server_parameters` 加载，`ToolManager` 按配置拉起或连接对应 MCP。**stdio 子进程**是标本常见形态（如 `tool-hybrid-search.yaml` 的 `tool_command` + `args`）；若 yaml 配的是远程 URL / SSE，则走网络连接而非本地 stdio 进程——面试以实际 tool yaml 的 `command` / `url` 字段为准。`name` 即 LLM 调用时的 `server_name`。
+- **一条 yaml = 一个 MCP Server 注册项**：Agent `tool_config` 引用后，由 `create_mcp_server_parameters` 加载，`ToolManager` 按配置拉起 stdio 子进程。`name` 即 LLM 调用时的 `server_name`。
+- **SSE / URL 诚实边界**：`ToolManager` 类本身在 `execute_tool_call` / `get_all_tool_definitions` 里**能**接受 `http(s)://...` 字符串并走 `sse_client`；但当前 Hydra `tool-*.yaml` → `create_mcp_server_parameters` 路径**未接 URL/SSE**——只产出 `StdioServerParameters`。面试不要说「tool yaml 可配 URL/SSE」；若需远程 MCP，得改装配代码或手工注入 URL 型 `params`。
 - Hybrid Search 额外把 Agent 级 `retrieval.mode` 注入子进程环境，与 §3 路由对齐。
 - Main / Sub **各自** `tool_config` + `tool_blacklist` → 各自 `ToolManager`，工具面可不同（GAIA 标本 Sub 挂 searching/reading/code，业务 `agent_server` Main 挂 hybrid-search）。
 
@@ -154,7 +155,7 @@ async def execute_tool_call(self, server_name, tool_name, arguments) -> Any:  # 
             return await self.execute_tool_call(correct_server, tool_name, arguments)
         return {"error": error_message, ...}
 
-    # playwright 特例（L327–357）；其余 stdio / SSE：
+    # playwright 特例（L327–357）；yaml 装配产出 stdio；类内另有 http(s) URL → sse_client 分支（L404–446），但 yaml 未接通
     async with stdio_client(...) as ...:
         tool_result = await session.call_tool(tool_name, arguments=arguments)  # L370
         # ↓ 空内容处理（L374–392）
@@ -179,13 +180,13 @@ tool_result = await self.main_agent_tool_manager.execute_tool_call(
 旁注：
 
 - 返回值统一为 `dict`，含 `result` 或 `error`；Orchestrator 写回 message history 供下一轮 LLM 消费。
-- **`@with_timeout(900)`** 是工具层硬超时；与任务级 14min `wait_for`、预算熔断（见 `05`）是不同层级。
+- **`@with_timeout(900)`** 在装饰器外层用 `asyncio.wait_for` 包住整个 `execute_tool_call`；**超时抛出的 `asyncio.TimeoutError` 不会进入函数内 `except`**，而是向上冒泡到 Orchestrator（Main ~L1167、Sub ~L747）。与任务级 14min `wait_for`、预算熔断（见 `05`）是不同层级。
 
 ### 2.5 降级分支（关键路径）
 
 | 场景 | 代码锚点 | 行为 |
 |------|----------|------|
-| **调用超时** | L254 `@with_timeout(900)` | `asyncio.wait_for` 超时 → 外层 `except` → 返回 `{"error": "Tool call failed: ..."}` |
+| **调用超时** | L254 `@with_timeout(900)`；Orchestrator ~L1167 / ~L747 | `asyncio.wait_for` 超时 → `TimeoutError` **逸出** `execute_tool_call` → Orchestrator `except` 捕获 → 构造 `{"error": "[ERROR]: Tool execution timeout"}`（Main）或 `{"error": "Tool call failed: [ERROR]: Tool execution timeout"}`（Sub）→ `format_tool_result_for_user` 写回 message history |
 | **Server 名写错、全局唯一** | L276–307 | `_find_servers_with_tool` 只命中 1 个 Server → 递归 `execute_tool_call` 并附 `[Auto-corrected: ...]` 注记 |
 | **Tool 名在该 Server 不存在、全局唯一** | L456–467 | 响应含 `Unknown tool:` → 换唯一正确 Server 重试 |
 | **返回空 / 无 text** | L336–345（playwright）；L374–392、L417–435（stdio/SSE） | 不抛异常；返回说明性 `result` 字符串，让 LLM 决定换工具或继续 |
@@ -236,10 +237,10 @@ if tool_name == "scrape" and "unhandled errors" in error_message and arguments.g
 
 ### 面试时怎么说
 
-1. 工具进系统靠 **YAML 声明式注册**：`tool_config` 列表 → `create_mcp_server_parameters` → `ToolManager` 按 yaml 拉起或连接 MCP（标本常见 stdio 子进程，远程 / SSE 则看 `url`），持有 Server 字典。
+1. 工具进系统靠 **YAML 声明式注册**：`tool_config` 列表 → `create_mcp_server_parameters` → 只装配 **stdio 子进程**（`tool_command` + `args`）→ `ToolManager` 持有 Server 字典。`ToolManager` 类能接 URL/SSE，但当前 yaml 路径没接通——别暗示现成可配。
 2. **发现**是运行时 `list_tools`，不是写死工具表；**调用**统一走 `execute_tool_call`，Main 和 Sub 各自 Manager，和 `03` 主循环分流一致。
 3. **98%** 我讲的是 **单次工具调用的有效结果率**——返回能接着推理的非空内容；不是任务做完的比例，更不是 GAIA 53%。
-4. 降级分两层：**工具层**是名纠错、空结果显式反馈、scrape 走 MarkItDown、LLM 换参再调；**产品层**才是最终报告不可用或总超时后的静默回退（[`02` D10–D11](./02-面试问答.md#d10-怎么定义失败中间一步失败就整单失败吗)）。
+4. 降级分两层：**工具层**是名纠错、空结果显式反馈、scrape 走 MarkItDown、LLM 换参再调；**900s 工具超时**不在 `execute_tool_call` 内转成 `{"error":...}`，而是 Orchestrator 捕获 `TimeoutError` 后写回 message history。**产品层**才是最终报告不可用或总超时后的静默回退（[`02` D10–D11](./02-面试问答.md#d10-怎么定义失败中间一步失败就整单失败吗)）。
 5. Hybrid Search 是 **众多 MCP 之一**（`tool-hybrid-search`），下一章再讲路由与融合；本章先把通用工具链讲清楚。
 
 ### 易踩坑
