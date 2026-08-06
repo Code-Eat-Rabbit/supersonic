@@ -108,7 +108,7 @@ for tool in agent_cfg["tool_config"]:
 
 旁注：
 
-- **一条 yaml = 一个 MCP Server 进程**（stdio 子进程）；`name` 即 LLM 调用时的 `server_name`。
+- **一条 yaml = 一个 MCP Server 注册项**：Agent `tool_config` 引用后，由 `create_mcp_server_parameters` 加载，`ToolManager` 按配置拉起或连接对应 MCP。**stdio 子进程**是标本常见形态（如 `tool-hybrid-search.yaml` 的 `tool_command` + `args`）；若 yaml 配的是远程 URL / SSE，则走网络连接而非本地 stdio 进程——面试以实际 tool yaml 的 `command` / `url` 字段为准。`name` 即 LLM 调用时的 `server_name`。
 - Hybrid Search 额外把 Agent 级 `retrieval.mode` 注入子进程环境，与 §3 路由对齐。
 - Main / Sub **各自** `tool_config` + `tool_blacklist` → 各自 `ToolManager`，工具面可不同（GAIA 标本 Sub 挂 searching/reading/code，业务 `agent_server` Main 挂 hybrid-search）。
 
@@ -226,19 +226,20 @@ if tool_name == "scrape" and "unhandled errors" in error_message and arguments.g
 
 口径来源：[`02` L0](./02-面试问答.md#03-硬指标) + 规格 §5.2；实现侧以 `execute_tool_call` 返回的 `result` 能否进入下一轮 LLM 为准，而非「子进程启动成功」。
 
-**降级顺序（产品 + 工具层，可背模板）：**
+**工具层降级顺序（可背三级）：**
 
-1. **同工具限次重试或名纠错** — Server/Tool 唯一命中时 harness 自动纠正（§2.5）；LLM 也可换参数再调。
+1. **同工具限次重试或名纠错** — Server/Tool 唯一命中时 harness 自动纠正（§2.5）；超时 / 空结果 / 异常返回会显式写回 message history，由 LLM 换参数再调。**标本未见单独配置成固定 `retry=N` 的计数器**——「限次」是 harness 纠错 + LLM 再调的组合口径，不要暗示硬编码重试次数。
 2. **备选工具 / 来源** — 如 scrape 失败走 MarkItDown；Hybrid 一路失败仍可用另一路（§3）。
 3. **基于已有证据部分完成** — Sub/Main Prompt 要求声明缺口；不因单步失败丢弃已验证片段。
-4. **仅当最终报告不可用或总超时** — 产品层静默回退描述性解读（[`01` D10–D11](./01-集成设计.md)），不阻断问数主链路。
+
+**产品层回退（与工具层分开记）：** 工具层部分完成后，若最终报告仍不可用或达到总超时，才进入产品静默回退描述性解读——见 [`02` D10–D11](./02-面试问答.md#d10-怎么定义失败中间一步失败就整单失败吗)；不阻断问数主链路。
 
 ### 面试时怎么说
 
-1. 工具进系统靠 **YAML 声明式注册**：`tool_config` 列表 → `create_mcp_server_parameters` → 每个 yaml 起一个 MCP stdio 进程，`ToolManager` 持有 Server 字典。
+1. 工具进系统靠 **YAML 声明式注册**：`tool_config` 列表 → `create_mcp_server_parameters` → `ToolManager` 按 yaml 拉起或连接 MCP（标本常见 stdio 子进程，远程 / SSE 则看 `url`），持有 Server 字典。
 2. **发现**是运行时 `list_tools`，不是写死工具表；**调用**统一走 `execute_tool_call`，Main 和 Sub 各自 Manager，和 `03` 主循环分流一致。
 3. **98%** 我讲的是 **单次工具调用的有效结果率**——返回能接着推理的非空内容；不是任务做完的比例，更不是 GAIA 53%。
-4. 降级是 **harness 能力 + Prompt 策略**：名纠错、空结果显式反馈、scrape 走 MarkItDown；任务级还有超时回退描述性解读。
+4. 降级分两层：**工具层**是名纠错、空结果显式反馈、scrape 走 MarkItDown、LLM 换参再调；**产品层**才是最终报告不可用或总超时后的静默回退（[`02` D10–D11](./02-面试问答.md#d10-怎么定义失败中间一步失败就整单失败吗)）。
 5. Hybrid Search 是 **众多 MCP 之一**（`tool-hybrid-search`），下一章再讲路由与融合；本章先把通用工具链讲清楚。
 
 ### 易踩坑
