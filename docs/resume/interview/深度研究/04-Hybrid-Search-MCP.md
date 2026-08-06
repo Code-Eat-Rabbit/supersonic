@@ -253,4 +253,307 @@ if tool_name == "scrape" and "unhandled errors" in error_message and arguments.g
 - 宣称 **生产向量库已落地**——`VectorBackend` 当前回退本地索引，§3 详述。
 - 把 **引用质量** 说成代码级 schema 校验——实际是 hit 字段 + Prompt 约束，§3.末再钉。
 
-**下一跳：** [§3 Hybrid Search：路由 → 召回 → 融合 → 证据链](./04-Hybrid-Search-MCP.md#3-hybrid-search路由--召回--融合--mcp-返回--证据链与引用)（待写）
+**下一跳：** [§3 Hybrid Search：路由 → 召回 → 融合 → 证据链](./04-Hybrid-Search-MCP.md#3-hybrid-search路由--召回--融合--mcp-返回--证据链与引用)
+
+---
+
+## 3. Hybrid Search：路由 → 召回 → 融合 → MCP 返回 → 证据链与引用
+
+### 3.1 前置条件
+
+读到这里应已知（来自 §2）：
+
+1. `tool-hybrid-search` 经 YAML 注册为 stdio MCP Server，`ToolManager.execute_tool_call` 统一调 `hybrid_search`。
+2. Agent 级 `retrieval.mode` / 权重经 `create_mcp_server_parameters` 注入子进程环境变量。
+3. **98%** 指单次工具调用返回可消费内容；Hybrid 一路失败时仍可用另一路或已有证据部分完成（§2.6 三级降级）。
+
+本章从 MCP 入口 `hybrid_search` 往下钻：**路由决策 → 本地 / Web 召回 → 加权融合 → JSON 返回 → Agent 如何把 hit 变成可引用结论**。
+
+标本锚点：`src/retrieval/router.py` · `ingest.py` · `local_index.py` · `vector_backend.py` · `web_retriever.py` · `fusion.py` · `schemas.py` · `src/tool/mcp_servers/hybrid_search_mcp_server.py`
+
+### 3.2 路由：`route_query`
+
+**入口参数：** `query`、`has_local_index`（由 `LocalIndexStore.has_index(task_id)` 判定）、`mode`（`auto` / `local` / `web` / `hybrid`）、默认权重 `local_weight=0.6` / `web_weight=0.4`。
+
+**决策顺序（钉死）：**
+
+| 优先级 | 条件 | 选中 mode | reason |
+|--------|------|-----------|--------|
+| 1 | `mode` 显式为 `local` / `web` / `hybrid` | 强制该 mode | `forced_by_mode` |
+| 2 | 无本地索引 | `web` | `no_local_index` |
+| 3 | 仅命中 LOCAL_HINTS | `local` | `local_keywords` |
+| 4 | 仅命中 WEB_HINTS | `web` | `web_keywords` |
+| 5 | 双命中或都未命中 | `hybrid` | `default_hybrid` |
+
+LOCAL_HINTS 示例：`附件`、`上传`、`文档`、`pdf`、`内部`、`第`、`页` …  
+WEB_HINTS 示例：`最新`、`今天`、`新闻`、`公告`、`政策`、`官网`、`实时` …
+
+**权重归一：** `local` → `(1.0, 0.0)`；`web` → `(0.0, 1.0)`；`hybrid` → 保留配置权重并按 `local+web` 归一（防无效输入）。
+
+```python
+# src/retrieval/router.py · route_query（L31–73，近全文）
+def route_query(
+    query: str,
+    has_local_index: bool,
+    mode: str = "auto",
+    local_weight: float = 0.6,
+    web_weight: float = 0.4,
+) -> RoutePlan:
+    normalized_mode = (mode or "auto").strip().lower()
+    if normalized_mode in ("local", "web", "hybrid"):
+        selected = normalized_mode
+        reason = "forced_by_mode"
+    else:
+        lowered = query.lower()
+        local_hit = any(hint in lowered for hint in LOCAL_HINTS)
+        web_hit = any(hint in lowered for hint in WEB_HINTS)
+        if not has_local_index:
+            selected = "web"
+            reason = "no_local_index"
+        elif local_hit and not web_hit:
+            selected = "local"
+            reason = "local_keywords"
+        elif web_hit and not local_hit:
+            selected = "web"
+            reason = "web_keywords"
+        else:
+            selected = "hybrid"
+            reason = "default_hybrid"
+
+    if selected == "local":
+        local_weight, web_weight = 1.0, 0.0
+    elif selected == "web":
+        local_weight, web_weight = 0.0, 1.0
+    else:
+        total = max(local_weight + web_weight, 1e-6)
+        local_weight, web_weight = local_weight / total, web_weight / total
+
+    return RoutePlan(mode=selected, reason=reason, local_weight=local_weight, web_weight=web_weight)
+```
+
+旁注：
+
+- **不是语义路由**——关键词 hints + 强制 mode + 无索引降级；面试别说「已上线学习型路由」。
+- `query_mode` 参数非 `auto` 时走强制分支；`auto` 则读环境变量 `RETRIEVAL_MODE`（§2.2 注入）。
+
+### 3.3 本地召回：ingest → chunk → LocalIndexStore
+
+**写入链（索引构建）：**
+
+```python
+# ingest.py · build_task_index（签名）
+def build_task_index(task_id, file_path, index_dir, backend="local_index", chunk_size=800, chunk_overlap=120) -> dict
+```
+
+1. `_convert_file_to_text`：文本直读 / MarkItDown 转 PDF·Office / 兜底 decode。
+2. `VectorBackend.upsert_document` → 当前**回退** `LocalIndexStore.write_index`。
+3. `chunk_text(text, chunk_size=800, chunk_overlap=120)` 滑窗分块；每块写入 `{task_id}.json`，含 `chunk_id`、`title`、`url`（source_uri）、`text`、`tokens`（`tokenize` 分词）。
+
+**检索链：**
+
+```python
+# local_index.py · LocalIndexStore.search（签名）
+def search(self, task_id: str, query: str, top_k: int = 5) -> list[SearchHit]
+```
+
+- 读 `{index_dir}/{task_id}.json`；query 与 chunk **token 交集 / |query_tokens|** 作 score。
+- 返回 `SearchHit(source="local", ..., snippet=text[:500], metadata={"overlap_terms": ...})`。
+
+**VectorBackend 诚实边界：**
+
+```python
+# vector_backend.py · 类 docstring + upsert/search
+class VectorBackend:
+    """Production vector DB adapter placeholder. Current implementation falls back to the local index."""
+    # TODO: connect Milvus/PGVector in production mode.
+    def upsert_document(...) -> dict:
+        return self.local_store.write_index(...)
+    def search(...) -> list[SearchHit]:
+        return self.local_store.search(...)
+```
+
+旁注：接口预留 Milvus/PGVector，**当前全部走本地 JSON 索引**——不要说「生产向量库已完整落地」。
+
+### 3.4 Web 召回：`search_web`
+
+```python
+# web_retriever.py · search_web（签名）
+async def search_web(query: str, top_k: int = 5) -> list[SearchHit]
+```
+
+- 依赖 `SERPER_API_KEY`；无 key 或 HTTP 异常 → **返回空列表**（不抛到 MCP 外层）。
+- Serper `organic` 结果映射为 `SearchHit(source="web", ...)`；score 按排名递减 `1.0 - index * 0.05`；`chunk_id=f"web_{index}"`。
+
+旁注：
+
+- Web 空召回**不等于**整次 Hybrid 失败——若路由为 `hybrid` 或 `local`，仍只交本地侧 fused 结果；Agent 应在报告中声明 Web 缺口（§3.7）。
+
+### 3.5 融合：`weighted_fusion` + `_dedupe`
+
+**流程：** 本地 hit × `local_weight`、Web hit × `web_weight` → 合并 → 按 score 降序 → 去重 → 取 Top K（默认 8）。
+
+**去重键：** `hit.url` 非空则用 URL；否则 `f"{hit.source}:{hit.chunk_id}"`——同一文档不同 chunk 可并存。
+
+```python
+# src/retrieval/fusion.py · _dedupe + weighted_fusion（L4–31，近全文）
+def _dedupe(hits: list[SearchHit]) -> list[SearchHit]:
+    seen: set[str] = set()
+    result: list[SearchHit] = []
+    for hit in hits:
+        key = hit.url or f"{hit.source}:{hit.chunk_id}"
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(hit)
+    return result
+
+def weighted_fusion(
+    local_hits: list[SearchHit],
+    web_hits: list[SearchHit],
+    local_weight: float,
+    web_weight: float,
+    top_k: int = 8,
+) -> list[SearchHit]:
+    mixed: list[SearchHit] = []
+    for hit in local_hits:
+        hit.score = hit.score * local_weight
+        mixed.append(hit)
+    for hit in web_hits:
+        hit.score = hit.score * web_weight
+        mixed.append(hit)
+    mixed.sort(key=lambda item: item.score, reverse=True)
+    return _dedupe(mixed)[:top_k]
+```
+
+旁注：
+
+- **0.6 / 0.4** 是标本默认基线（环境变量 `RETRIEVAL_LOCAL_WEIGHT` / `RETRIEVAL_WEB_WEIGHT`），归一后加权——不是业务最优参数。
+- 融合**原地修改** `hit.score`；去重保留先出现（即分更高）条目。
+- 本地 token 重叠分与 Web 排名分**量纲不同**，加权是工程折中，不是信息检索理论最优。
+
+### 3.6 MCP 返回：`hybrid_search`
+
+```python
+# hybrid_search_mcp_server.py · hybrid_search 主流程 + 返回 dict（L22–78，关键段）
+@mcp.tool()
+async def hybrid_search(query: str, top_k: int = 8, query_mode: str = "auto") -> str:
+    task_id = os.environ.get("TASK_ID", "").strip()
+    if not task_id:
+        return json.dumps({"error": "...", "route": "web"}, ...)
+
+    store = LocalIndexStore(index_dir=INDEX_DIR)
+    has_local_index = store.has_index(task_id)
+    route = route_query(query=query, has_local_index=has_local_index, mode=..., ...)
+
+    local_hits = store.search(...) if route.mode in ("local", "hybrid") else []
+    web_hits = await search_web(...) if route.mode in ("web", "hybrid") else []
+    fused_hits = weighted_fusion(local_hits, web_hits, route.local_weight, route.web_weight, top_k)
+
+    return json.dumps({
+        "route": route.mode,
+        "reason": route.reason,
+        "mix": {"local_weight": route.local_weight, "web_weight": route.web_weight},
+        "local_hits": len(local_hits),
+        "web_hits": len(web_hits),
+        "results": [item.to_dict() for item in fused_hits],
+    }, ensure_ascii=False, indent=2)
+```
+
+**返回 JSON 字段（钉死）：**
+
+| 字段 | 含义 |
+|------|------|
+| `route` | 最终 mode：`local` / `web` / `hybrid` |
+| `reason` | 路由原因码（见 §3.2 表） |
+| `mix` | 归一后 `{local_weight, web_weight}` |
+| `local_hits` | 本地召回条数（融合前） |
+| `web_hits` | Web 召回条数（融合前） |
+| `results` | 融合后 `SearchHit.to_dict()` 列表 |
+
+旁注：
+
+- 缺 `TASK_ID` 时直接 error JSON，**无法定位任务索引**——索引按 `task_id` 隔离文件。
+- 返回值是 **JSON 字符串**（MCP text content），Orchestrator 写回 message history 供 LLM 消费；无 Pydantic 二次校验。
+
+### 3.7 证据链与引用
+
+Hybrid 的价值不止「搜到东西」——而是先产出**可追溯 hit 列表**，再让 Agent 按出处写结论并标缺口。
+
+#### 3.7.1 工具层：`SearchHit` 字段
+
+```python
+# schemas.py · SearchHit dataclass（L8–19）
+@dataclass
+class SearchHit:
+    source: SourceType          # "local" | "web"
+    title: str
+    url: str
+    snippet: str                # 可摘录原文片段（本地为 chunk 前 500 字）
+    score: float                # 召回/融合分（非置信度）
+    chunk_id: str               # 本地 "{task_id}_{i}"；Web "web_{index}"
+    metadata: dict[str, Any] = field(default_factory=dict)
+```
+
+| 字段 | 本地典型值 | Web 典型值 | 报告层用途 |
+|------|------------|------------|------------|
+| `source` | `"local"` | `"web"` | 区分访谈/研报 vs 公网 |
+| `title` | 文件名 | 搜索结果标题 | 引用标题 |
+| `url` | `source_uri` | Serper link | **必须尽量带回** |
+| `snippet` | chunk 文本截断 | Serper snippet | **优先摘录原文** |
+| `score` | token 重叠比 × 权重 | 排名分 × 权重 | 排序参考，**≠ 事实置信度** |
+| `chunk_id` | `{task_id}_{i}` | `web_{n}` | 回溯具体块 / 去重键 |
+| `metadata` | `overlap_terms` 等 | `position` 等 | 调试 / 交叉验证辅助 |
+
+MCP 外层另含 `route` / `reason` / `mix` / 两路召回计数——Agent 可据此说明「本次 mainly local / 为何 hybrid / Web 是否为空」。
+
+#### 3.7.2 报告层：Prompt + ResearchDirective
+
+**Sub / Main Prompt（标本可核对）：** `sub_worker.py` 要求：
+
+- 优先 **quote / excerpt 原文**，并 **provide URL if available**；
+- 来源不确定要 flag；冲突信息全部保留并标不一致；
+- 信息不完整仍交 partial excerpts 并标 uncertainty；**禁止猜测**。
+
+**业务 ResearchDirective（见 [`01` §7.5](./01-集成设计.md#75-researchdirective-type-specific-研究指导-prompt)，交叉引用不整篇复制）：**
+
+| 增强类型 | 引用相关约束（摘要） |
+|----------|----------------------|
+| `financial_analyst` | 归因须标 **证据强度** `[已验证]` / `[推断]` / `[推测]`；禁止编造未披露数字 |
+| `academic` | **严禁编造引用**；预印本须标注；文内 `[作者, 年份]` + 文末清单含 DOI/URL |
+| `default` | 通用研究指导 + 声明缺口 |
+
+Directive 是 **prepend 进 task 的 Markdown 指导**，不是编译期 schema——与 Hybrid JSON 返回并行约束 Agent 行为。
+
+#### 3.7.3 诚实边界：无代码级引用强校验
+
+**当前没有：**
+
+- 强制 JSON 引用列表 / 脚注 schema 的 post-processor；
+- 对最终报告逐条核对 `chunk_id` 是否存在于 `results` 的编译期保证；
+- 分高覆盖原始访谈/研报的自动仲裁——冲突时应**保留双出处 + 不确定性**。
+
+引用质量靠 **结构化 `SearchHit` + Prompt / Directive 软约束**，不是类型系统或 JSON Schema 强校验。面试一句话：
+
+> Hybrid 先产出可追溯 hit 列表；Agent 按出处摘录并标强度/缺口；**不假装**引用未召回材料，也**不说**代码已做脚注 schema 校验。
+
+**可背流程：** 先产出可追溯 hit → 按出处写结论并标证据强度与缺口 → 一路失败仍交已验证部分。
+
+### 面试时怎么说
+
+1. Hybrid 是 **一把 MCP 工具**：`hybrid_search` 里先 `route_query`——强制 mode 优先；没本地索引就 web；关键词 hints 分流；默认 hybrid；权重按 mode 归一。
+2. 本地侧 **ingest → chunk → JSON 索引**；`VectorBackend` 只是占位，**现在全回退 LocalIndexStore**，别说生产向量库已上线。
+3. Web 走 Serper；**空 Web 仍可只交本地 fused**；API 挂了返回 `[]`，由 LLM 声明缺口。
+4. 融合 **0.6/0.4 标本基线**，加权排序、URL 或 `source:chunk_id` 去重、Top K。
+5. 返回 JSON 带 **route/reason/mix/两路计数/results**——LLM 据此写报告；引用靠 hit 字段 + Prompt/Directive，**没有**代码级 schema 强校验。
+
+### 易踩坑
+
+- 把 **关键词 hints** 说成语义理解 / 学习型路由。
+- 把 **score** 说成置信度或因果强度——只是召回+融合排序分。
+- 把 **0.6/0.4** 说成线上调优最优值。
+- 把 **`VectorBackend`** 说成 Milvus/PGVector 已生产落地。
+- Web **空列表** 就说 Hybrid 整体失败——local 路可能仍有结果。
+- 把 **自然语言报告里的引用格式** 说成「JSON schema / 脚注校验已落地」——规格与 §1.3 诚实表已钉：无强校验。
+- **编造** 未出现在 `results` 里的 chunk 或 URL——Prompt 禁止，面试也要主动划界。
+
+**下一跳：** [§4 业务知识库与案例](./04-Hybrid-Search-MCP.md#4-业务落地知识库访谈--清洗研报--f19-金融--行为科学两案例)（待写）
