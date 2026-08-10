@@ -79,7 +79,7 @@
 |------|------|
 | **B1 ∥ B2** | 并行双通道，不是先后工序 |
 | **B3** | 两通道的**共同出口**（点击后果） |
-| **时间线** | 会话中常先遇 B1、查完再遇 B2，但可只手打仍走 B2 |
+| **时间线** | 会话中常先遇 B1、查完再遇 B2；但用户纯手打（不点 B1）也会触发 B2——B2 不依赖 B1 被点过 |
 
 每一站四拍：场景句 → 代码落点 → 数据形状 → 易踩坑 / 面试一句（≤3 行）。
 
@@ -88,9 +88,9 @@
 | 节 | 标题 | 要点 |
 |----|------|------|
 | **B0** | 先看清两条路 | 上图 + 类职责 + 配置速查；与 03 一行对照 |
-| **B1** | 通道一：进门内置 | `Agent` / `AgentDO.examples`；前端进门展示；点下去当新 query；`doExecuteAgentExamples` 与冷启动关系（可选）；**勿混** `preset_query_collection`（PluginManager） |
+| **B1** | 通道一：进门内置 | `Agent` / `AgentDO.examples`；前端进门展示；点下去当新 query；`doExecuteAgentExamples` 是 03 冷启动种子的自动入口之一（跑 examples 成功 + Memory Review 开 → 入记忆库），本文不展开 Review 细节，链 03 B5；**勿混** `preset_query_collection`（PluginManager） |
 | **B2** | 通道二：查完相似 | `QueryRecommendProcessor.process` → `CompletableFuture.runAsync`；`recallExemplars(memory_{agentId}, queryText, 5)`（topK **硬编码**）；只取 `question` → `ChatQueryDO.similarQueries`；chat-sdk `SimilarQuestionItem` 展开可再拉 |
-| **B3** | 汇合：点推荐后再跑一轮问数 | 再走完整 parse/execute；与手打路径差异主要在归因；`source=preset|similar` 标清落点（前端埋点 / 网关 / 未接线） |
+| **B3** | 汇合：点推荐后再跑一轮问数 | 再走完整 parse/execute；与手打路径差异主要在归因；`source=preset|similar` 标清落点（**当前 OSS Java 主链路未检索到 source 枚举；产品/ELK 口径，实现对码再确认埋点位置**） |
 | **B4** | 晚了、空了、推歪了 | 异步慢→空列表；按 **queryId** 回写（无 OSS version 字段）；固化题型；ENABLED 近邻仍可能语义错 |
 | **B5** | 下一刀往哪砍 | 见 §3.3 |
 
@@ -102,6 +102,7 @@
 | P0 | 相似异步空态与超时的产品约定（重试拉取 / 占位文案），写清现状 vs 期望 |
 | P1 | 内置 × 相似去重与联动（点过的内置是否在相似里降权） |
 | P1 | 按 Agent / 实验周切片的贡献率看板 |
+| P1 | 与 03 治理联动：03 DISABLED 后 04 自动召不到（同库只读）；推荐侧负反馈能否触发 03 的 `disableMemory` 走 B4.1 链 |
 | P2 | A/B；对 `source=similar\|preset` 子集看执行成功率 / 近重复手打是否下降 |
 
 ---
@@ -134,7 +135,7 @@
 | 召回 | `ExemplarService.recallExemplars` + `EmbeddingConfig.getMemoryCollectionName` |
 | 持久化展示字段 | `ChatQueryDO.similarQueries` |
 | 内置配置 | `Agent.examples` / `AgentDO.examples` |
-| 例题自动跑 | `AgentServiceImpl.doExecuteAgentExamples` |
+| 冷启动种子自动执行（与 03 B5 关联） | `AgentServiceImpl.doExecuteAgentExamples` |
 | Plugin 易混集合 | `EmbeddingConfig` preset collection + `PluginManager` |
 | 前端 | `webapp/packages/chat-sdk/.../SimilarQuestionItem.tsx` 等 |
 
@@ -198,3 +199,4 @@
 | 日期 | 变更 |
 |------|------|
 | 2026-08-10 | 初稿：A/B/C；双通道叙事；B1/B2/B3 定为通道一/通道二/汇合 |
+| 2026-08-10 | 审后修订：B3 source 落点与 §5 诚实边界对齐（默认未检索到，对码确认）；B1 `doExecuteAgentExamples` 链 03 B5（去「可选」）；B5 加 P1「与 03 治理联动」；§3.1 时间线行去拗口；§6 锚点表「例题自动跑」改为「冷启动种子自动执行（与 03 B5 关联）」 |
