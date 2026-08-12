@@ -273,3 +273,247 @@ FinStat2SQL（arXiv 2506.23273）在金融报表 Text2SQL 里也用"向量召回
 ```
 
 每条评测输出包含：候选排序列表、LLM 选中的字段集合、gold 字段集合、三指标、错误类型（`error_type` 分三类：**召回遗漏** / **选错** / **格式失败**）。混淆矩阵按这三类 + 元素对统计。
+
+---
+
+## 附录：核心代码标本
+
+> **执行链路**：`EmbeddingMapper.doMap`（入口）→ `EmbeddingMatchStrategy.detectByBatch`（向量召回）→ `detectWithLLM`（LLM 重排增强 ⭐）→ `MapFilter`（规则后置）
+
+### 阶段一：入口 —— EmbeddingMapper.doMap
+
+> 来源：`EmbeddingMapper.doMap`
+> 对应正文：行动计划"调用链路"
+> 面试要点：accept 判断只在 LOOSE 或 LLM_OR_RULE 时进入；doMap 调用 EmbeddingMatchStrategy 完成召回 + LLM 增强；结果含 llmMatched 标记传给下游
+
+```java
+@Override
+public boolean accept(ChatQueryContext chatQueryContext) {
+    boolean b0 = MapModeEnum.LOOSE.equals(chatQueryContext.getRequest().getMapModeEnum());
+    boolean b1 = chatQueryContext.getRequest().getText2SQLType() == Text2SQLType.LLM_OR_RULE;
+    return b0 || b1;
+}
+
+public void doMap(ChatQueryContext chatQueryContext) {
+    SchemaMapInfo mappedInfo = chatQueryContext.getMapInfo();
+
+    // 1. Query from embedding by queryText
+    EmbeddingMatchStrategy matchStrategy = ContextUtils.getBean(EmbeddingMatchStrategy.class);
+    List<EmbeddingResult> matchResults = getMatches(chatQueryContext, matchStrategy);
+
+    // Process match results
+    HanlpHelper.transLetterOriginal(matchResults);
+
+    // 2. Build SchemaElementMatch based on match results
+    for (EmbeddingResult matchResult : matchResults) {
+        Long elementId = Retrieval.getLongId(matchResult.getMetadata().get("id"));
+        Long dataSetId = Retrieval.getLongId(matchResult.getMetadata().get("dataSetId"));
+        if (Objects.isNull(dataSetId)) { continue; }
+        SchemaElementType elementType = SchemaElementType.valueOf(matchResult.getMetadata().get("type"));
+        SchemaElement schemaElement = getSchemaElement(dataSetId, elementType, elementId,
+                chatQueryContext.getSemanticSchema());
+        if (schemaElement == null) { continue; }
+
+        SchemaElementMatch schemaElementMatch = SchemaElementMatch.builder()
+                .element(schemaElement).frequency(BaseWordBuilder.DEFAULT_FREQUENCY)
+                .word(matchResult.getName()).similarity(matchResult.getSimilarity())
+                .detectWord(matchResult.getDetectWord()).build();
+        schemaElementMatch.setLlmMatched(matchResult.isLlmMatched());
+
+        addToSchemaMap(chatQueryContext.getMapInfo(), dataSetId, schemaElementMatch);
+    }
+}
+```
+
+### 阶段二：向量召回 —— detectByBatch（基础版）
+
+> 来源：`EmbeddingMatchStrategy.detectByBatch` + `detectByQueryTextsSub`
+> 对应正文：行动计划第一步（并行化）
+> 面试要点：批量分片并行召回；阈值过滤只在非 LLM 路径生效（LLM 路径跳过阈值，交给 LLM 精选）
+
+```java
+public List<EmbeddingResult> detectByBatch(ChatQueryContext chatQueryContext,
+        Set<Long> detectDataSetIds, Set<String> detectSegments, boolean useLlm) {
+    int embeddingMapperBatch = Integer.valueOf(
+            mapperConfig.getParameterValue(MapperConfig.EMBEDDING_MAPPER_BATCH));
+
+    List<String> queryTextsList = detectSegments.stream().map(String::trim)
+            .filter(StringUtils::isNotBlank).collect(Collectors.toList());
+    List<List<String>> queryTextsSubList = Lists.partition(queryTextsList, embeddingMapperBatch);
+
+    // Create and execute tasks for each batch (并行)
+    List<Supplier<List<EmbeddingResult>>> tasks = new ArrayList<>();
+    for (List<String> queryTextsSub : queryTextsSubList) {
+        tasks.add(createTask(chatQueryContext, detectDataSetIds, queryTextsSub, useLlm));
+    }
+    Set<EmbeddingResult> results = executeTasks(tasks);
+
+    // ... useLlm 分支见阶段三 ...
+    return new ArrayList<>(results);
+}
+
+private List<EmbeddingResult> detectByQueryTextsSub(Set<Long> detectDataSetIds,
+        List<String> queryTextsSub, ChatQueryContext chatQueryContext, boolean useLlm) {
+    double threshold = Double.parseDouble(mapperConfig.getParameterValue(EMBEDDING_MAPPER_THRESHOLD));
+    int embeddingNumber = Integer.parseInt(mapperConfig.getParameterValue(EMBEDDING_MAPPER_NUMBER));
+    int embeddingRoundNumber = Integer.parseInt(mapperConfig.getParameterValue(EMBEDDING_MAPPER_ROUND_NUMBER));
+
+    RetrieveQuery retrieveQuery = RetrieveQuery.builder().queryTextsList(queryTextsSub).build();
+    List<RetrieveQueryResult> retrieveQueryResults = metaEmbeddingService.retrieveQuery(
+            retrieveQuery, embeddingNumber, modelIdToDataSetIds, detectDataSetIds);
+
+    // 阈值过滤只在非 LLM 路径生效
+    List<EmbeddingResult> collect = retrieveQueryResults.stream().peek(result -> {
+        if (!useLlm && CollectionUtils.isNotEmpty(result.getRetrieval())) {
+            result.getRetrieval().removeIf(retrieval ->
+                    !result.getQuery().contains(retrieval.getQuery())
+                    && retrieval.getSimilarity() < threshold);
+        }
+    }).filter(result -> CollectionUtils.isNotEmpty(result.getRetrieval()))
+            .flatMap(result -> result.getRetrieval().stream()
+                    .map(retrieval -> convertToEmbeddingResult(result, retrieval)))
+            .collect(Collectors.toList());
+
+    return collect.stream()
+            .sorted(Comparator.comparingDouble(EmbeddingResult::getSimilarity).reversed())
+            .limit(embeddingRoundNumber * queryTextsSub.size()).collect(Collectors.toList());
+}
+```
+
+### 阶段三：LLM 重排增强 ⭐ —— detectWithLLM + LLM 分支
+
+> 来源：`EmbeddingMatchStrategy.detect` + `detectWithLLM` + `detectByBatch` 的 useLlm 分支
+> 对应正文：行动计划第二步（五件套）；迭代优化坑 1-4
+> 面试要点：retrievedInfo = EmbeddingResult JSON；prompt 让 LLM 选 ID 列表；选中的标 llmMatched=true，未选的丢弃；**当前代码 useLLM=true 写死（Force enable for measurement）**
+
+```java
+@Override
+public List<EmbeddingResult> detect(ChatQueryContext chatQueryContext, List<S2Term> terms,
+        Set<Long> detectDataSetIds) {
+    // 1. Base detection
+    List<EmbeddingResult> baseResults = super.detect(chatQueryContext, terms, detectDataSetIds);
+
+    boolean useLLM = true; // Force enable for measurement
+    if (useLLM) {
+        List<EmbeddingResult> llmResults = detectWithLLM(chatQueryContext, detectDataSetIds);
+        if (!CollectionUtils.isEmpty(llmResults)) {
+            baseResults.addAll(llmResults);
+        }
+    }
+    return baseResults.stream().distinct().collect(Collectors.toList());
+}
+
+private List<EmbeddingResult> detectWithLLM(ChatQueryContext chatQueryContext,
+        Set<Long> detectDataSetIds) {
+    try {
+        String queryText = chatQueryContext.getRequest().getQueryText();
+        if (StringUtils.isBlank(queryText)) { return Collections.emptyList(); }
+
+        Set<String> detectSegments = extractValidSegments(queryText);
+        if (CollectionUtils.isEmpty(detectSegments)) { return Collections.emptyList(); }
+
+        return detectByBatch(chatQueryContext, detectDataSetIds, detectSegments, true);
+    } catch (Exception e) {
+        log.error("Error in LLM detection for context: {}", chatQueryContext, e);
+        return Collections.emptyList();
+    }
+}
+
+// detectByBatch 的 useLlm=true 分支：
+if (useLlm) {
+    Map<String, Object> variable = new HashMap<>();
+    variable.put("userText", chatQueryContext.getRequest().getQueryText());
+    variable.put("retrievedInfo", JSONObject.toJSONString(results));  // EmbeddingResult JSON
+
+    Prompt prompt = PromptTemplate.from(LLM_FILTER_PROMPT).apply(variable);
+    ChatLanguageModel chatLanguageModel = ModelProvider.getChatModel(chatModelConfig);
+    String response = chatLanguageModel.generate(prompt.toUserMessage().singleText());
+
+    if (StringUtils.isBlank(response)) {
+        results.clear();
+    } else {
+        List<String> retrievedIds = JSONObject.parseArray(response, String.class);
+        results = results.stream().filter(t -> retrievedIds.contains(t.getId()))
+                .collect(Collectors.toSet());
+        results.forEach(r -> r.setLlmMatched(true));  // 标记 LLM 选中
+    }
+}
+```
+
+### 附：LLM_FILTER_PROMPT 模板常量
+
+> 来源：`EmbeddingMatchStrategy.LLM_FILTER_PROMPT`
+> 对应正文：迭代优化坑 1（LLM 忽略 COMMENT）+ 坑 4（JSON 格式不稳定）
+> 面试要点：原版 prompt 只让 LLM 看 retrievedInfo（整体 JSON），没显式引导看 COMMENT——这是最大 bad case 来源，驱动了"四维 COMMENT 增强"设计
+
+```java
+private static final String LLM_FILTER_PROMPT =
+        """
+                #Role: You are a professional data analyst specializing in metrics and dimensions.
+                #Task: Given a user query and a list of retrieved metrics/dimensions through vector recall,
+                please analyze which metrics/dimensions the user is most likely interested in.
+                #Rules:
+                1. Based on user query and retrieved info, accurately determine metrics/dimensions user truly cares about.
+                2. Do not return all retrieved info, only select those highly relevant to user query.
+                3. Maintain high quality output, exclude metrics/dimensions irrelevant to user intent.
+                4. Output must be in JSON array format, only include IDs from retrieved info, e.g.: ['id1', 'id2']
+                5. Return JSON content directly without markdown formatting
+                #Input Example:
+                #User Query: {{userText}}
+                #Retrieved Metrics/Dimensions: {{retrievedInfo}}
+                #Output:""";
+```
+
+### 附：数据结构 —— EmbeddingResult
+
+> 来源：`EmbeddingResult`
+> 对应正文：行动计划第二步"数据字段"
+> 面试要点：llmMatched 字段是 LLM 增强新增的标记，下游 MapFilter 用它跳过短词过滤
+
+```java
+@Data
+@ToString
+public class EmbeddingResult extends MapResult {
+    private String id;
+    private Map<String, String> metadata;
+    private boolean llmMatched;  // LLM 增强新增字段
+
+    @Override
+    public boolean equals(Object o) { /* by id */ }
+    @Override
+    public int hashCode() { /* by id */ }
+    @Override
+    public String getMapKey() { return this.getName() + Constants.UNDERLINE + this.getId(); }
+}
+```
+
+### 阶段四：规则后置 —— MapFilter 白名单
+
+> 来源：`MapFilter.filter` + `filterByDetectWordLenLessThanOne`
+> 对应正文：行动计划第二步"MapFilter 白名单"
+> 面试要点：短词过滤对 LLM 命中项跳过（`&& !schemaElementMatch.isLlmMatched()`）——这是 LLM 增强的配套改动，避免短词规则误杀 LLM 精选结果
+
+```java
+public static void filter(ChatQueryContext chatQueryContext) {
+    filterByDataSetId(chatQueryContext);
+    filterByDetectWordLenLessThanOne(chatQueryContext);
+    twoCharactersMustEqual(chatQueryContext);
+    // 按 QueryDataType 过滤（TAG/METRIC/DIMENSION）
+    switch (chatQueryContext.getRequest().getQueryDataType()) { ... }
+    filterByRules(chatQueryContext);
+}
+
+public static void filterByDetectWordLenLessThanOne(ChatQueryContext chatQueryContext) {
+    Map<Long, List<SchemaElementMatch>> dataSetElementMatches =
+            chatQueryContext.getMapInfo().getDataSetElementMatches();
+    for (Map.Entry<Long, List<SchemaElementMatch>> entry : dataSetElementMatches.entrySet()) {
+        List<SchemaElementMatch> value = entry.getValue();
+        if (!CollectionUtils.isEmpty(value)) {
+            // 短词过滤对 LLM 命中项跳过 —— LLM 增强的配套白名单
+            value.removeIf(schemaElementMatch ->
+                    StringUtils.length(schemaElementMatch.getDetectWord()) <= 1
+                    && !schemaElementMatch.isLlmMatched());
+        }
+    }
+}
+```
