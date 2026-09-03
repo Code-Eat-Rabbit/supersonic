@@ -521,7 +521,7 @@ MCP 外层另含 `route` / `reason` / `mix` / 两路召回计数——Agent 可�
 
 **Prompt 张力（面试可主动点出）：** 同一文件里，**summarize 阶段**在任务耗尽上下文时会写 *make a well-informed educated guess*——与工作阶段的 *never assume or guess* 并存。面试口径取中间层：**有 hit / 原文就摘录+URL；无证据就声明缺口，不把推测包装成事实**；仅在 summarize 兜底且证据已穷尽时，才允许带标注的推断。
 
-**业务 ResearchDirective（见 [`01` §7.5](./01-集成设计.md#75-researchdirective-type-specific-研究指导-prompt)，交叉引用不整篇复制）：**
+**业务 ResearchDirective（见 [`02` §7.5](./02-集成设计.md#75-researchdirective-type-specific-研究指导-prompt)，交叉引用不整篇复制）：**
 
 | 增强类型 | 引用相关约束（摘要） |
 |----------|----------------------|
@@ -759,6 +759,6 @@ Directive 是 **prepend 进 task 的 Markdown 指导**，不是编译期 schema�
 2. `src/tool/manager.py`：`execute_tool_call` 超时、纠错、空内容、MarkItDown（§2.4–§2.5）。
 3. `src/retrieval/router.py` → `local_index.py` / `web_retriever.py` → `fusion.py` → `hybrid_search_mcp_server.py`（§3 全链）。
 4. `src/retrieval/ingest.py`：上传、抽取、分块、索引入口（§4.3）。
-5. `config/agent_prompts/sub_worker.py` + [`01` §7.5 ResearchDirective](./01-集成设计.md#75-researchdirective-type-specific-研究指导-prompt)：摘录、URL、证据强度、禁编造引用（§3.7.2）。
+5. `config/agent_prompts/sub_worker.py` + [`02` §7.5 ResearchDirective](./02-集成设计.md#75-researchdirective-type-specific-研究指导-prompt)：摘录、URL、证据强度、禁编造引用（§3.7.2）。
 6. 对照本文 [§4.5–§4.6](./04-Hybrid-Search-MCP.md#45-f19-案例一金融--研报与政策归因)：金融 / 行为两案例可背骨架。
 7. 工程化（追踪 / 熔断 / 断点续跑）→ [`05-工程化能力.md`](./05-工程化能力.md)；编排主线 → [`03`](./03-Main-Sub-Agent编排.md)。

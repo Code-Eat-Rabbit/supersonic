@@ -22,7 +22,7 @@
 
 - **预算熔断、两类并发、TaskTracer 回放、断点续跑** 的完整详解 → [`05-工程化能力.md`](./05-工程化能力.md) §2–§4（G21–G24）。
 - **Hybrid Search / MCP** 全文 → [`04-Hybrid-Search-MCP.md`](./04-Hybrid-Search-MCP.md)（F17–F20）。
-- Java↔Python 契约、SSE、权限配额、SQLite 状态机的**全文**仍在 [`01-集成设计.md`](./01-集成设计.md)；本文只保留「进到 Main–Sub 之前」的衔接，避免与编排精读脱节。
+- Java↔Python 契约、SSE、权限配额、SQLite 状态机的**全文**仍在 [`02-集成设计.md`](./02-集成设计.md)；本文只保留「进到 Main–Sub 之前」的衔接，避免与编排精读脱节。
 - 主循环里「单轮 tool 过多如何截断」见 [§3.4](#34-工具执行截断--顺序-await--三路分流) 与 [§8](#8-预算与熔断) 短指针；G22/G23 追问表不在本文展开。
 
 ### 0.3 诚实边界总表
@@ -50,7 +50,7 @@
 
 ### 1.2 上游衔接：用户 query 如何进到 Main–Sub
 
-本文 §1.3 起的 ①–⑨ 是**编排运行时**。业务里用户并不是直接调用 `run_main_agent`：先有一条「问数结果 → 深度研究 Job → 增强后的 task → pipeline」的入口链。下面只保留与 Main–Sub 衔接相关的部分；HTTP 契约 / SSE / 权限配额细节见 [`01` §3](./01-集成设计.md#3-整体架构) 与 [`01` §7.0](./01-集成设计.md#70-miro-flow-solution-内部数据流路由后架构图)。
+本文 §1.3 起的 ①–⑨ 是**编排运行时**。业务里用户并不是直接调用 `run_main_agent`：先有一条「问数结果 → 深度研究 Job → 增强后的 task → pipeline」的入口链。下面只保留与 Main–Sub 衔接相关的部分；HTTP 契约 / SSE / 权限配额细节见 [`02` §3](./02-集成设计.md#3-整体架构) 与 [`02` §7.0](./02-集成设计.md#70-miro-flow-solution-内部数据流路由后架构图)。
 
 #### 端到端：从点击到 `execute_task_pipeline`
 
@@ -126,7 +126,7 @@ final_answer, boxed_answer, log_path = await run_with_timeout(
 | `research_type`（`financial_analyst` / `academic` / `default`） | **每条 Job** Intent 分类 | 选研究指导模板，拼进 `full_task` |
 | `data_domain` | 仅金融增强下可选 | `domains/*.md` 补丁，不是第四种平行 type |
 
-更细的 Intent / 模板 / 命名口径见 [`01` §3.3](./01-集成设计.md#33-python-内部处理流意图识别--分发--执行)、[`01` §7.4 IntentClassifier](./01-集成设计.md#74-intentclassifier路由分类--演进锚点-2) 与 [`01` §7.5 ResearchDirective](./01-集成设计.md#75-researchdirectivetype-specific-研究指导-prompt)。
+更细的 Intent / 模板 / 命名口径见 [`02` §3.3](./02-集成设计.md#33-python-内部处理流意图识别--分发--执行)、[`02` §7.4 IntentClassifier](./02-集成设计.md#74-intentclassifier路由分类--演进锚点-2) 与 [`02` §7.5 ResearchDirective](./02-集成设计.md#75-researchdirectivetype-specific-研究指导-prompt)。
 
 ### 1.3 一次任务数据流（编排运行时 ①–⑨）
 
@@ -1011,7 +1011,7 @@ final_answer_text = await self._handle_summary_with_context_limit_retry(
 
 按以下顺序回看，先接上游入口，再 **§2 配置/工具化/装配** → **§3 主循环** → §4 Prompt → Sub/收束，最后对照题目级并行：
 
-0. [`01` §3.3 / §7.0 / §7.8](./01-集成设计.md#33-python-内部处理流意图识别--分发--执行)：Java 触发 → Intent → ResearchDirective → `full_task` → `execute_task_pipeline`（本文 §1.2）。
+0. [`02` §3.3 / §7.0 / §7.8](./02-集成设计.md#33-python-内部处理流意图识别--分发--执行)：Java 触发 → Intent → ResearchDirective → `full_task` → `execute_task_pipeline`（本文 §1.2）。
 1. `config/agent_llm_qwen37plus.yaml`：Main/Sub 的 LLM、工具和两层预算。
 2. 本文 [§2](#2-调用链精读配置装配)：`create_pipeline_components` → `expose_sub_agents_as_tools`（§2.3–2.4）→ `execute_task_pipeline`（§2.5）→ 工具面合并（§2.6）。
 3. `src/core/orchestrator.py` + 本文 [§3](#3-调用链精读主循环)：主循环分流 → [§6](#6-调用链精读run_sub_agent) → [§7](#7-调用链精读主-agent-final-summary)。
