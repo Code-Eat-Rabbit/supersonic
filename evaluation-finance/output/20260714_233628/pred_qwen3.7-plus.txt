@@ -1,0 +1,502 @@
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`stock_name`, `t2`.`total_equity`, `t3`.`net_profit`, `t3`.`total_profit`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_name, stock_code, SUM(total_equity) AS total_equity, SUM(total_assets) AS total_assets, SUM(total_profit) AS total_profit, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `total_equity`, `current_assets`
+FROM
+`balance_sheet`)
+SELECT SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`, `net_profit`
+FROM
+`income_stmt`)
+SELECT stock_name, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_name ORDER BY SUM(net_profit) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `revenue`, `operating_profit`, `stock_name`, `net_profit`, `total_profit`, `parent_net_profit`, `operating_cost`
+FROM
+`income_stmt`)
+SELECT stock_name, SUM(net_profit) AS net_profit, SUM(total_profit) AS total_profit, SUM(operating_profit) AS operating_profit, SUM(parent_net_profit) AS parent_net_profit, SUM(operating_cost) AS operating_cost, SUM(revenue) AS revenue FROM t_6 GROUP BY stock_name ORDER BY SUM(net_profit) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`
+FROM
+`cash_flow`)
+SELECT stock_name FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name ORDER BY SUM(total_assets) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `revenue`, `operating_profit`, `stock_name`, `net_profit`, `operating_cost`
+FROM
+`income_stmt`)
+SELECT stock_name, SUM(net_profit) AS net_profit, SUM(operating_profit) AS operating_profit, SUM(operating_cost) AS operating_cost, SUM(revenue) AS revenue FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `total_liabilities`, `stock_name`, `total_equity`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`stock_name`, `t4`.`net_profit`, `t5`.`operating_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_name, SUM(net_profit) AS net_profit, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`stock_name`, `t3`.`net_profit`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_name, SUM(net_profit) AS net_profit, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`
+FROM
+`cash_flow`)
+SELECT stock_name FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`
+FROM
+`cash_flow`)
+SELECT stock_name FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name ORDER BY SUM(total_assets) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `current_liabilities`, `stock_name`, `current_assets`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`, `net_profit`
+FROM
+`income_stmt`)
+SELECT stock_name, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`stock_name`, `t4`.`net_profit`, `t5`.`operating_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_name, SUM(net_profit) AS net_profit, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_name ORDER BY SUM(net_profit) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_assets) AS total_assets, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name ORDER BY SUM(total_assets) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`stock_name`, `t4`.`net_profit`, `t5`.`operating_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_name, SUM(net_profit) AS net_profit, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`
+FROM
+`balance_sheet`)
+SELECT stock_name, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t4`.`revenue`, `t4`.`operating_profit`, `t5`.`investing_cf`, `t5`.`operating_cf`, `t5`.`financing_cf`, `t4`.`operating_cost`, `t5`.`stock_code`, `t5`.`net_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_code, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf, SUM(operating_profit) AS operating_profit, SUM(operating_cost) AS operating_cost, SUM(revenue) AS revenue FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t3`.`net_profit`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t3`.`revenue`, `t2`.`total_assets`, `t2`.`current_liabilities`, `t3`.`operating_profit`, `t2`.`total_liabilities`, `t2`.`total_equity`, `t2`.`current_assets`, `t2`.`stock_code`, `t3`.`operating_cost`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_code, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets, SUM(operating_profit) AS operating_profit, SUM(operating_cost) AS operating_cost, SUM(revenue) AS revenue FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`investing_cf`, `t4`.`net_profit`, `t5`.`operating_cf`, `t5`.`financing_cf`, `t5`.`stock_code`, `t5`.`net_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`current_liabilities`, `t2`.`total_liabilities`, `t2`.`total_equity`, `t3`.`net_profit`, `t2`.`current_assets`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `total_equity`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_code, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`investing_cf`, `t4`.`net_profit`, `t5`.`operating_cf`, `t5`.`financing_cf`, `t5`.`stock_code`, `t5`.`net_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_code`
+FROM
+`cash_flow`)
+SELECT stock_code FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`current_liabilities`, `t2`.`total_liabilities`, `t2`.`total_equity`, `t3`.`net_profit`, `t2`.`current_assets`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `current_liabilities`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_code, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t3`.`net_profit`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t4`.`net_profit`, `t5`.`operating_cf`, `t5`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`, `net_profit`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`, `investing_cf`, `operating_cf`, `financing_cf`, `stock_code`, `net_cf`
+FROM
+`cash_flow`)
+SELECT stock_name, stock_code, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`, `stock_code`
+FROM
+`cash_flow`)
+SELECT stock_name, stock_code FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`stock_name`, `t5`.`investing_cf`, `t4`.`net_profit`, `t5`.`operating_cf`, `t5`.`financing_cf`, `t5`.`stock_code`, `t5`.`net_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t3`.`revenue`, `t2`.`total_assets`, `t3`.`operating_profit`, `t2`.`stock_name`, `t2`.`total_equity`, `t2`.`current_assets`, `t2`.`stock_code`, `t3`.`operating_cost`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_name, stock_code, SUM(total_assets) AS total_assets, SUM(total_equity) AS total_equity, SUM(current_assets) AS current_assets, SUM(operating_profit) AS operating_profit, SUM(operating_cost) AS operating_cost, SUM(revenue) AS revenue FROM t_6 GROUP BY stock_name, stock_code ORDER BY SUM(total_assets) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`current_liabilities`, `t2`.`total_liabilities`, `t2`.`stock_name`, `t2`.`total_equity`, `t3`.`net_profit`, `t2`.`current_assets`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`current_liabilities`, `t2`.`total_liabilities`, `t2`.`stock_name`, `t3`.`total_profit`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_name, stock_code, SUM(total_liabilities) AS total_liabilities, SUM(total_profit) AS total_profit, SUM(current_liabilities) AS current_liabilities FROM t_6 GROUP BY stock_name, stock_code ORDER BY SUM(total_liabilities) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`, `total_equity`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_assets) AS total_assets, SUM(total_equity) AS total_equity, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name, stock_code ORDER BY SUM(total_assets) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_name`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`, `net_profit`
+FROM
+`income_stmt`)
+SELECT stock_name, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_name ORDER BY SUM(net_profit) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`stock_name`, `t5`.`investing_cf`, `t4`.`net_profit`, `t5`.`operating_cf`, `t5`.`financing_cf`, `t5`.`stock_code`, `t5`.`net_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit, SUM(operating_cf) AS operating_cf, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf FROM t_6 GROUP BY stock_name, stock_code ORDER BY SUM(net_profit) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`stock_name`, `t3`.`net_profit`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`stock_name`, `t3`.`net_profit`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `stock_name`, `total_equity`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_name, stock_code, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name, stock_code ORDER BY SUM(total_equity) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `revenue`, `operating_profit`, `stock_name`, `net_profit`, `operating_cost`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit, SUM(operating_profit) AS operating_profit, SUM(operating_cost) AS operating_cost, SUM(revenue) AS revenue FROM t_6 GROUP BY stock_name, stock_code ORDER BY SUM(net_profit) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_name`, `investing_cf`, `operating_cf`, `financing_cf`, `stock_code`, `net_cf`
+FROM
+`cash_flow`)
+SELECT stock_name, stock_code, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`stock_name`, `t3`.`net_profit`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_name, stock_code ORDER BY SUM(net_profit) DESC LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t3`.`total_assets`, `t3`.`current_liabilities`, `t3`.`total_liabilities`, `t5`.`stock_name`, `t3`.`total_equity`, `t5`.`investing_cf`, `t4`.`net_profit`, `t5`.`operating_cf`, `t5`.`financing_cf`, `t3`.`current_assets`, `t5`.`stock_code`, `t5`.`net_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_name, stock_code, SUM(net_profit) AS net_profit, SUM(net_cf) AS net_cf, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_name, stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `net_profit`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_code, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `investing_cf`, `operating_cf`, `financing_cf`, `stock_code`, `net_cf`
+FROM
+`cash_flow`)
+SELECT stock_code, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `revenue`, `operating_profit`, `operating_cost`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(operating_profit) AS operating_profit, SUM(operating_cost) AS operating_cost, SUM(revenue) AS revenue FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `total_equity`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_code, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `net_profit`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `current_liabilities`, `total_liabilities`, `total_equity`, `current_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_code, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_code`
+FROM
+`cash_flow`)
+SELECT stock_code FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `stock_code`
+FROM
+`cash_flow`)
+SELECT stock_code FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `total_assets`, `stock_code`
+FROM
+`balance_sheet`)
+SELECT stock_code, SUM(total_assets) AS total_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `net_profit`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `investing_cf`, `operating_cf`, `financing_cf`, `stock_code`, `net_cf`
+FROM
+`cash_flow`)
+SELECT stock_code, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `net_profit`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_code`
+FROM
+`cash_flow`)
+SELECT stock_code FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `stock_code`
+FROM
+`cash_flow`)
+SELECT stock_code FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `t2`.`total_assets`, `t2`.`current_liabilities`, `t2`.`total_liabilities`, `t2`.`total_equity`, `t3`.`net_profit`, `t2`.`current_assets`, `t2`.`stock_code`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t2`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t3` ON `t2`.`stock_code` = `t3`.`stock_code` AND `t2`.`report_date` = `t3`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(total_equity) AS total_equity, SUM(total_liabilities) AS total_liabilities, SUM(total_assets) AS total_assets, SUM(current_liabilities) AS current_liabilities, SUM(current_assets) AS current_assets FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `revenue`, `operating_profit`, `net_profit`, `operating_cost`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(operating_profit) AS operating_profit, SUM(operating_cost) AS operating_cost, SUM(revenue) AS revenue FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`investing_cf`, `t4`.`net_profit`, `t5`.`operating_cf`, `t5`.`financing_cf`, `t5`.`stock_code`, `t5`.`net_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `stock_code`
+FROM
+`cash_flow`)
+SELECT stock_code FROM t_6 LIMIT 500 OFFSET 0	dummy
+with t_6 as (SELECT `net_profit`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `net_profit`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `net_profit`, `stock_code`
+FROM
+`income_stmt`)
+SELECT stock_code, SUM(net_profit) AS net_profit FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy
+with t_6 as (SELECT `t5`.`investing_cf`, `t4`.`net_profit`, `t5`.`operating_cf`, `t5`.`financing_cf`, `t5`.`stock_code`, `t5`.`net_cf`
+FROM
+(SELECT `stock_code`, `stock_name`, `report_date`, `total_assets`, `total_liabilities`, `total_equity`, `current_assets`, `current_liabilities`, `non_current_assets`, `non_current_liabilities`
+FROM
+`balance_sheet`) AS `t3`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `revenue`, `operating_cost`, `operating_profit`, `total_profit`, `net_profit`, `parent_net_profit`, `basic_eps`
+FROM
+`income_stmt`) AS `t4` ON `t3`.`stock_code` = `t4`.`stock_code` AND `t3`.`report_date` = `t4`.`report_date`
+INNER JOIN (SELECT `stock_code`, `stock_name`, `report_date`, `operating_cf`, `investing_cf`, `financing_cf`, `net_cf`
+FROM
+`cash_flow`) AS `t5` ON `t3`.`stock_code` = `t5`.`stock_code` AND `t3`.`report_date` = `t5`.`report_date`)
+SELECT stock_code, SUM(net_profit) AS net_profit, SUM(net_cf) AS net_cf, SUM(investing_cf) AS investing_cf, SUM(financing_cf) AS financing_cf, SUM(operating_cf) AS operating_cf FROM t_6 GROUP BY stock_code LIMIT 200 OFFSET 0	dummy

@@ -4,7 +4,7 @@ import json, os, sys, time, requests, jwt
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 SUPERSONIC_URL = "http://localhost:9080"
-AGENTS = {"qwen3.7-plus": 9, "deepseek-v4-pro": 10}
+AGENTS = {"qwen3.7-plus": 11, "deepseek-v4-pro": 12}
 
 
 def get_auth():

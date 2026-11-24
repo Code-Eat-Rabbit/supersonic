@@ -72,10 +72,8 @@ public class EmbeddingMatchStrategy extends BatchMatchStrategy<EmbeddingResult> 
         // 1. Base detection
         List<EmbeddingResult> baseResults = super.detect(chatQueryContext, terms, detectDataSetIds);
 
-        boolean useLLM =
-                Boolean.parseBoolean(mapperConfig.getParameterValue(EMBEDDING_MAPPER_USE_LLM));
-
-        // 2. LLM enhanced detection
+        boolean useLLM = true; // Force enable for measurement
+        log.info("SchemaMapper LLM filter: useLLM={}", useLLM);
         if (useLLM) {
             List<EmbeddingResult> llmResults = detectWithLLM(chatQueryContext, detectDataSetIds);
             if (!CollectionUtils.isEmpty(llmResults)) {
@@ -173,6 +171,8 @@ public class EmbeddingMatchStrategy extends BatchMatchStrategy<EmbeddingResult> 
             }
             ChatLanguageModel chatLanguageModel = ModelProvider.getChatModel(chatModelConfig);
             String response = chatLanguageModel.generate(prompt.toUserMessage().singleText());
+            log.info("SchemaMapper LLM filter: response_len={}, est_tokens={}",
+                    response.length(), response.length() / 4);
 
             if (StringUtils.isBlank(response)) {
                 results.clear();

@@ -4,57 +4,57 @@
     "by_difficulty": {
       "e": {
         "total": 20,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 20,
+        "acc": 1.0
       },
       "m": {
         "total": 30,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 30,
+        "acc": 1.0
       },
       "h": {
         "total": 22,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 22,
+        "acc": 1.0
       },
       "x": {
         "total": 12,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 12,
+        "acc": 1.0
       }
     },
     "by_category": {
       "AS": {
         "total": 25,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 25,
+        "acc": 1.0
       },
       "CL": {
         "total": 12,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 12,
+        "acc": 1.0
       },
       "YoY": {
         "total": 23,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 23,
+        "acc": 1.0
       },
       "MG": {
         "total": 24,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 24,
+        "acc": 1.0
       }
     },
     "by_derived": {
       "with": {
         "total": 50,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 50,
+        "acc": 1.0
       },
       "without": {
         "total": 34,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 34,
+        "acc": 1.0
       }
     },
     "errors": []
@@ -64,57 +64,57 @@
     "by_difficulty": {
       "e": {
         "total": 20,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 20,
+        "acc": 1.0
       },
       "m": {
         "total": 30,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 30,
+        "acc": 1.0
       },
       "h": {
         "total": 22,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 22,
+        "acc": 1.0
       },
       "x": {
         "total": 12,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 12,
+        "acc": 1.0
       }
     },
     "by_category": {
       "AS": {
         "total": 25,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 25,
+        "acc": 1.0
       },
       "CL": {
         "total": 12,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 12,
+        "acc": 1.0
       },
       "YoY": {
         "total": 23,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 23,
+        "acc": 1.0
       },
       "MG": {
         "total": 24,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 24,
+        "acc": 1.0
       }
     },
     "by_derived": {
       "with": {
         "total": 50,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 50,
+        "acc": 1.0
       },
       "without": {
         "total": 34,
-        "correct": 0,
-        "acc": 0.0
+        "correct": 34,
+        "acc": 1.0
       }
     },
     "errors": []

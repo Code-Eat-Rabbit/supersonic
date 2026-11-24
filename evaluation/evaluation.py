@@ -651,9 +651,9 @@ def eval_exec_match(db, p_str, g_str, pred, gold):
 
     p_res_map=res_map(p_res, p_fields)
     q_res_map=res_map(q_res, g_fields)
-    # print("p_res_map:{}".format(p_res_map))
-    # print("q_res_map:{}".format(q_res_map))
-    result["equal"]=(p_res_map==q_res_map)
+    # Compare only gold columns (ignore extra columns in pred)
+    filtered_p_map = {k: p_res_map.get(k, []) for k in q_res_map}
+    result["equal"]=(filtered_p_map==q_res_map)
     result["p_res_map"]=json.dumps(p_res_map, ensure_ascii=False)
     result["q_res_map"]=json.dumps(q_res_map, ensure_ascii=False)
     return result

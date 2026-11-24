@@ -11,130 +11,174 @@
 
 ## 1. 背景：为什么做，怎么发现的问题
 
-**痛点**：研究员用业务术语提问，但数据库里字段是英文缩写（如 `net_profit`、`net_profit_excluding`）。原来的系统靠向量相似度匹配，遇到语义相近的字段就会混淆——"查扣非净利润返回了净利润的值，差了好几个亿"。这是 Chat-BI 最危险的失败模式：**SQL 语法对、执行不报错、结果看似合理但语义错**。
+**原先为什么主要靠规则**：语义层已经建好——指标 / 维度 / 别名会灌进 HanLP 词典，SchemaMapper 常态走 `STRICT → MODERATE` 的 Keyword 精确命中。「净利润」「扣非净利润」这类已注册的内地标准名，规则层直接命中，**根本不进 Embedding**。`EmbeddingMapper` 只在整轮解析仍空、降级到 `LOOSE` 时才打开，属于兜底路径，平时用得很少。
 
-**怎么发现的**：端到端查询有五个环节（多轮改写、SchemaMapper、S2SQL 生成、语义校正、物理 SQL 翻译）。定位到 SchemaMapper 分三步：
+**什么问题把兜底路径暴露出来**：实习在广东智能院，问数用户常混用内地口径与港澳 / 港股报表口径，再叠加错别字、繁体字、生僻缩写。语义层与词典按内地命名建设，对中港异名覆盖不足（对照如：董事袍金 ↔ 董事薪酬，期内溢利 ↔ 净利润）。这些问法在 STRICT/MODERATE 上 **规则 0 hit**，整轮无候选后被迫降级 LOOSE——Embedding 这条原先很少打到的路径，开始被真实流量打到。
 
-1. **用户反馈 + ELK 日志看链路**——研究员反馈"查比亚迪扣非净利润，返回的是净利润的值"；在 Kibana Discover 里按 `traceId` 串联看完整链路，发现正确字段 `net_profit_excluding` 在 Top-10 但排第 3，错误字段 `net_profit` 排第 1——**embedding 把语义相近的字段排到了前面**。
-2. **分层验证确认瓶颈位置**——把 SchemaMapper 输出的错误候选手动替换成正确字段，后续 Parser/Corrector/Translator 生成的 SQL 就对了。后续管道是确定性的，**SchemaMapper 错了全链必错**。
+**Embedding 上出了什么错**：以「期内溢利」为例——词典无此别名 → 进入 `EmbeddingMapper` → 向量按内地近义召回「净利润 / 利润总额 / 营业利润 / 扣非净利润 / 息税前利润…」→ 纯相似度把近邻利润指标排到前面。下游照错字段生成 SQL：**语法对、执行不报错、结果看似合理但语义错**——这是 Chat-BI 最危险的失败模式。
+
+**因此做什么**：不是推翻「规则优先」，而是给 `EmbeddingMapper` 加 **LLM 重排 / 精选**（选择题选 ID），专门治理 LOOSE 路径上「召回对了近义簇、但排错 / 选错」的问题。
+
+**怎么发现的**：端到端有五个环节（多轮改写、SchemaMapper、S2SQL 生成、语义校正、物理 SQL 翻译）。定位到 SchemaMapper 分三步：
+
+1. **用户反馈 + ELK 日志看链路**——研究员反馈查「期内溢利」等问句结果对不上；按 `traceId` 串联发现 STRICT/MODERATE 无候选，LOOSE 才出现 Embedding 候选；正确映射（如净利润）在 Top-K 但非 rank1，利润近邻抢前。
+2. **分层验证确认瓶颈位置**——把 SchemaMapper 输出的错误候选手动换成正确字段，后续 Parser/Corrector/Translator 生成的 SQL 就对了。后续管道是确定性的，**SchemaMapper 错了全链必错**。
 3. **小样本量化归因**——从 ELK 导出最近一周约 1000 次查询，失败 query 里随机抽约 50 条人工拆链路，约 60%（约 30 条）错在 SchemaMapper，25% 是 SQL 生成错误，15% 是值链接失败。
 
-**量化瓶颈**：端到端准确率 T0 只有 45%，其中约 60% 的错误归因到 SchemaMapper——**优化 SchemaMapper 是提升端到端准确率的最高 ROI 路径**。SchemaMapper 层 Exact Match（EM）基线只有 58%。
+**量化瓶颈**：端到端准确率 T0 只有 45%，其中约 60% 的错误归因到 SchemaMapper——**优化 SchemaMapper（尤其是 LOOSE / Embedding 路径）是提升端到端准确率的最高 ROI 路径**。SchemaMapper 层 Exact Match（EM）基线只有 58%。
 
-**错误的具体表现**（50 条里反复出现）：
-- **选错近义字段**："净利润"→"利润总额"、"扣非利润"→"净利润"
-- **营收口径混淆**："营收"→"营业总收入"而非"营业收入"
-- **一字之差**："市盈率"→"市净率"
-- **召回遗漏**：ROE（衍生指标，不在物理表字段名里）、"扣非利润"（用户简称 vs 库里全称差太远）
+**错误的具体表现**（50 条里反复出现、且会进 LOOSE 的）：
+- **中港异名 / 未注册别名**：「期内溢利」「董事袍金」等 → 规则 miss → Embedding 近义簇
+- **错别字 / 繁体**：exact match 断裂 → 同上降级
+- **进 Embedding 后近义选错**：利润簇（净利 / 总额 / 营业 / 扣非 / EBIT）打架，向量排错
+- **召回遗漏**：说法与内地命名差太远，Top-K 里根本没有正确项
 
 ---
 
 ## 2. 方案选型：考虑了哪些方案，如何权衡
 
-**候选方案对比**：
+**选型前提**：规则主路径（STRICT/MODERATE + 语义层词典）不动。问题出在 LOOSE 降级后——Embedding 已召回近义簇，但排错 / 选错。因此比的是「召回之后怎么精选」，不是要不要规则、也不是端到端让 LLM 写 SQL。
 
-| 方案 | 做法 | 不足 |
-|------|------|------|
-| 端到端 LLM 生成 SQL | 把 200+ 张表全塞给 LLM，让它直接出 SQL | 200+ 表规模下准确率只有 10-31%（业界实测）；黑盒不可解释；token 爆炸 |
-| 纯 Embedding 召回 | 向量 topK + 阈值过滤 | 分不清"净利润"和"扣非净利润"——语义相近但业务含义不同 |
-| 规则过滤（HanLP 词典） | STRICT/MODERATE 模式靠分词词典 | 对"扣非利润"这种简称/别名覆盖不够；衍生指标（ROE）完全无能为力 |
-| **三层漏斗 + LLM 消歧**（选的） | 规则失败 → 向量粗召回 → LLM 做选择题精选 ID | 多一次 LLM 调用（成本+延迟）；但准确率可控、可解释 |
+**逐步淘汰**：
 
-**选型理由**：
+| 顺序 | 方案 | 做法 | 淘汰 / 入选理由 |
+|------|------|------|----------------|
+| ① 淘汰 | 继续增强语义层、堆别名（含中港词汇对照） | 把「期内溢利」「董事袍金」等写进 alias / 词典 | **治标不治本**：说法组合近乎无限（错别字、繁体、生僻缩写、地域异名），维护成本随用户增长；别名解决「已知说法」，解决不了「未见说法」 |
+| ② 淘汰 | LLM pairwise 两两比较重排 | 每次比两个候选，再聚合成序 | **延迟不可接受**：即使用较省的比较排序，也要约 \(K \log K\) 量级的多次 LLM 调用；\(K=10\sim20\) 时易到秒级，主链路吃不消。全量两两更是 \(O(K^2)\) |
+| ③ 淘汰 | Cross-encoder 专用 reranker | 对 (query, column_text) 打分后再截断 | **标注 + 部署成本高**：要 (query, 正确字段) 训练数据，还要训/服一额外模型；实习周期与当时基础设施不划算 |
+| ✅ 入选 | **LLM listwise 精选 ID** | 召回合并后的候选一次进 prompt，返回**相关** ID 列表（不定长） | **一次调用**、零训练、能读 COMMENT/description 做中港与近义消歧；**选择题选 ID，不填空生成字段名** |
 
-1. **可解释性**——分层设计能看到每一步在做什么（召回对不对、过滤对不对、消歧对不对）；端到端 LLM 是黑盒
-2. **准确率上限**——分层设计利用确定性引擎（规则 + Calcite）兜底，LLM 只做"选择题"不做"填空题"，准确率可控
-3. **金句：LLM 做选择题，不做填空题**
+**金句**：别名盖已知、pairwise 太慢、cross-encoder 太重 → **LLM 做选择题，不做填空题**（listwise / `detectWithLLM`）。
 
-**和现有代码的关系**：在 SuperSonic 已有的 `EmbeddingMapper` 召回链路上加 LLM filter，不改主链路结构。切入点是 `EmbeddingMatchStrategy.detectByBatch`，新增 `detectWithLLM` 路径。
+**入选后要分清的两个「数量」（别混成同一个 K）**
 
-**三层漏斗设计**：
-1. **STRICT/MODERATE 规则匹配**（HanLP 分词 + 词典）——成功就直接走，失败才降级
-2. **LOOSE Embedding 召回**——向量 topK + 阈值 0.9，失败模式的兜底
-3. **LLM 消歧精选** ⭐——对 Embedding 召回的候选做 ID 精选（选择题，不是填空生成字段名）
+| | 含义 | 代码里实际怎样 |
+|--|------|----------------|
+| **进 prompt 的候选池** | Embedding 合并后塞给 listwise 的条数 | 每段默认召回 **5** 条（`embedding.number`），4–5 个词就可能是 **20–25** 条，再按 id 去重；**当前实现进 LLM 前不再做全局 Top-K 截断**，整包 `retrievedInfo` 进 prompt |
+| **LLM 输出** | 精选后留下的字段 | **不是固定 Top-K 排序**。Prompt 要求「只返回与问句高度相关的 ID 列表」，长度随问句变化（可能 1 个，也可能多个）；代码用返回的 ID 过滤 `results`，并打 `llmMatched`，**没有**再配置一个输出侧的 k |
 
-**何时整段 Mapping 跳过**：请求已带 `selectedParseInfo` / mapInfo 非空 → 直接进 PARSING 阶段，不跑 Mapper。
+因此：listwise 在这里是 **filter / 精选**（相关则留），不是「对 20 条重排后取 top5」。文档若写「送进 LLM 的 K=5」，容易和「每段召回 5」或「输出只要 5 个」搞混——**输出侧没有固定的 k**。
+
+**和「候选太多 → position bias」的关系**：池子到 20+ 时，listwise 确实更容易首尾偏置、中间漏看。工程上更干净的做法是进 prompt 前再截一刀（例如全局相似度 Top-10/Top-5）；**现仓库尚未做这一刀**，控量主要靠「每段 top5 + id 去重」。选型时仍应意识到：池子过大是 listwise 的风险，不是「输出 K=5」能单独解决的。
+
+**和现有代码的关系**：不改「规则优先 → LOOSE 才开 Embedding」的主链路；只在 `EmbeddingMapper` 召回之后加精选。切入点是 `EmbeddingMatchStrategy.detectByBatch`，新增 `detectWithLLM`（listwise + 要求 JSON ID 列表；structured output / 解析兜底属工程配套，不是第四套方案）。
+
+**落地后的三层形态**：
+1. **STRICT/MODERATE 规则匹配**（HanLP + 词典）——命中就走，失败才降级
+2. **LOOSE Embedding 召回**——多段近义粗召回（每段约 top5，合并去重）
+3. **LLM listwise 精选** ⭐——对合并后的候选池做相关 ID 过滤（输出不定长）
+
+**何时整段 Mapping 跳过**：请求已带 `selectedParseInfo` / mapInfo 非空 → 直接进 PARSING，不跑 Mapper。
 
 ---
 
 ## 3. 行动计划：怎么一步步写出来的
 
-按真实开发时序，分四步落地。
+按真实开发时序，分两步落地。
 
 ### 第一步：前置优化——召回链路并行化
 
-**为什么先做这步**：LLM filter 会引入一次额外的 LLM 调用（约 1-3 秒），如果召回链路本身是串行的，叠加后主链路延迟会爆。先做并行化，为后续 LLM 调用腾性能预算。
+**为什么先做这步**：后面的 LLM listwise 会多一次调用（约 1–3 秒）。Embedding 本身又会因「多段查询」多次打向量库；若这些检索仍是串行 for 循环，再叠 LLM，Mapping 延迟容易顶满。所以先把**同一次 Embedding 内的多段向量召回**并行化，给 LLM 腾预算。
 
-**改了什么**：
-- `BaseMatchStrategy.executeTasks` 把多个 Mapper 的召回任务改成并行提交
-- 引入 `BatchMatchStrategy` 雏形 + `ThreadPoolConfig` 配置专用线程池
-- `EmbeddingMatchStrategy` 从单条串行改成批量并行召回
+**并行边界**：SPI 上 `EmbeddingMapper → KeywordMapper → …` **仍是顺序执行**。并行只发生在 `EmbeddingMatchStrategy` 内部的多次 `retrieveQuery`，不是六个 Mapper 一起跑。
 
-**关键类名**：`BaseMatchStrategy.executeTasks`、`SingleMatchStrategy`、`ThreadPoolConfig`
+#### 1）召回流水线（先弄清「在并行什么活」）
 
-**效果**：召回阶段耗时从约 X 秒降到约 X/N 秒（N 个 Mapper 并行），为后续 LLM 调用留出性能预算。
+**① 切段**——一条问句变成多个查询片段，两种切法：
+
+- **基础路径（字符滑窗）**：`word.size=3`、`word.step=2`。例：「期内溢利同比增长」→ `期内溢` / `溢利同` / `同比增` / `增长`…
+- **LLM 路径（HanLP 分词）**：按词切开再过滤。例：「比亚迪期内溢利」→ 可能得到 `比亚迪`、`期内`、`溢利`…
+
+**② 每段召回多少**：`retrieveQuery(..., embedding.number)`，默认 **每段最多 5 条**相似 schema 命中（指标/维度等）。例：`溢利` → 净利润、利润总额、营业利润、扣非净利润、息税前利润…（至多 5 个）。
+
+**③ 召回之后**：
+
+| 步骤 | 行为 | 默认配置 |
+|------|------|----------|
+| 阈值 | 相似度低于 0.9 的丢掉 | `threshold=0.9`；**LLM 路径跳过**，交给 listwise |
+| 批内截断 | 拍平后按 similarity 降序，`limit(round.number × 本批片段数)` | `round.number=10`；片段少时常常裁不到 |
+| 合并去重 | 各并行任务结果按 **id** 去重 | `EmbeddingResult.equals` 按 id |
+| 分流 | 基础路径：结果进 `mapInfo`；LLM 路径：合并后的集合整包进 prompt，**再 1 次 listwise**（输出不定长 ID，标 `llmMatched`） | 进 LLM 前**无**全局 Top-K 截断；控量主要靠每段 top5 + 去重 |
+
+补充：`detect()` 在 `useLLM=true` 时会 **先后跑两路并 addAll**（滑窗保底 ∪ HanLP+LLM），不是 if-else 二选一；缘由见 §4 坑 4。
+
+#### 2）并行化怎么改的
+
+- **改前**：`for` 循环按片段（组）依次 `retrieveQuery`，耗时 ≈ 各次之和。
+- **改了什么 / 关键类**：
+  - `EmbeddingMatchStrategy.detectByBatch`：多段检索改为任务列表 + 线程池
+  - `BaseMatchStrategy.executeTasks`：用 `mapExecutor` 异步执行并 `allOf` 汇总
+  - `detectByQueryTextsSub`：单批内的召回、阈值、截断
+  - `BatchMatchStrategy`：滑窗切段入口；`SingleMatchStrategy` 的多步检测也复用同一套 `executeTasks`
+  - `ThreadPoolConfig#mapExecutor`：Mapping 专用池
+- **改后**：每次召回打成任务丢进 `mapExecutor`，并行打向量库，再走上面的合并与后处理。池子常驻 **8** 线程、配置上 max=16，但队列无界，实际很少扩到 16，**有效并发≈8**；空闲 180s 回收；拒绝策略 CallerRuns（无界队列下几乎用不上）；线程名 `supersonic-map-pool-*`。
+
+#### 3）效果
+
+同一次 Embedding 里多次向量检索的墙钟时间从约 \(\sum t_i\) 降到约 \(\max t_i\)（受有效并发≈8 限制），为后面那 **1 次** listwise 留出延迟余量。
+
 
 ### 第二步：主合入——LLM filter 五件套一次性落地
 
-**设计思路**：典型的"功能开关 + 默认关闭 + 一切就绪"上线策略。开关默认关闭，先在评测环境验证，再业务侧手动打开。
+**本节只讲「怎么把 listwise 接到线上」**：召回怎么切段/合并、STRICT→LOOSE 何时开 Embedding，见 §2 与第一步；这里不重复。
 
-**五件套同时引入**：
+**设计思路**：功能开关 + 默认关闭。yaml 默认 `false`，评测环境先验证，业务侧再手动打开（与第三步「评测期硬编码强开」区分）。
 
-1. **配置开关** `EMBEDDING_MAPPER_USE_LLM`（yaml `s2.mapper.embedding.use-llm-enhance`，默认 false）——业务侧需要时手动打开
-2. **Prompt 模板** `LLM_FILTER_PROMPT`——让 LLM 从 `retrievedInfo`（EmbeddingResult JSON）里选最匹配的字段 ID
-3. **主链路方法** `EmbeddingMatchStrategy.detectWithLLM` / `detectByBatch(..., useLlm=true)`——召回候选不为空且开关打开时，走 LLM 精选路径
-4. **数据字段** `EmbeddingResult.llmMatched` + `SchemaElementMatch.isLlmMatched()`——标记哪些候选是 LLM 选的
-5. **MapFilter 白名单**——LLM 命中的候选跳过短词过滤（避免短词规则误杀 LLM 精选结果）
+#### 1）一次落地的五件套
 
-**LLM 入参**（标本实际接线）：
-```
-retrievedInfo = EmbeddingResult JSON（id/name/similarity/detectWord
-              + DataItem 系 metadata：bizName/type/modelId…）
-```
+| # | 件 | 作用 |
+|---|-----|------|
+| 1 | 配置开关 `EMBEDDING_MAPPER_USE_LLM`（`s2.mapper.embedding.use-llm-enhance`，默认 false） | 是否走 LLM 精选 |
+| 2 | Prompt 模板 `LLM_FILTER_PROMPT` | 吃 `userText` + `retrievedInfo`，要求返回相关 ID 的 JSON 数组 |
+| 3 | `detectWithLLM` / `detectByBatch(..., useLlm=true)` | 召回合并后发起 **1 次** listwise，按返回 ID 过滤 |
+| 4 | `EmbeddingResult.llmMatched` / `SchemaElementMatch.isLlmMatched()` | 标记 LLM 选中项，传给下游 |
+| 5 | `MapFilter` 白名单 | `llmMatched=true` 的候选 **跳过短词过滤**，避免规则误杀精选结果 |
 
-**LLM 出参**：JSON ID 列表，如 `["101", "105"]` → 对应候选标记 `llmMatched=true`
+切入点仍在已有 Embedding 链路上：`EmbeddingMatchStrategy.detectByBatch`，不改 SPI 顺序。
 
-**调用链路**：
-```
-NL2SQLParser.parse
-  ├─ 先 STRICT / MODERATE + 规则向（Keyword / HanLP…）  ← EmbeddingMapper 通常不跑
-  └─ 无结果再 LOOSE / LLM_OR_RULE
-        └─ ChatWorkflowEngine.performMapping  （mapInfo 空才跑）
-              └─ SchemaMapper 链（spring.factories）
-                    EmbeddingMapper → KeywordMapper → QueryFilterMapper → …
-```
+#### 2）一次调用的入参 / 出参（举例）
 
-| 步骤 | 类·方法 | 要点 |
-|------|---------|------|
-| Embedding 召回 | `EmbeddingMapper.doMap` → `EmbeddingMatchStrategy.detect` | 仅 `LOOSE` 或 `Text2SQLType.LLM_OR_RULE` 时 `accept` |
-| 滑窗 / 批向量 | `BatchMatchStrategy` + `MetaEmbeddingService.retrieveQuery` | 片段 topK≈`embedding.number`（默认 5）；阈值默认 0.9（LLM 路径会跳过阈值） |
-| LLM 精选 | `detectWithLLM` / `detectByBatch(..., useLlm=true)` | 输出 JSON ID 列表 → `llmMatched=true` |
-| 规则后置 | `BaseMapper.map` 末尾 `MapFilter.filter` | dataSet 裁剪、短词、QueryDataType、exact match 优先；LLM 命中项跳过短词过滤 |
+Prompt 变量：
 
-**输出结构**：
-```
-SchemaMapInfo
-  dataSetId → [ SchemaElementMatch {
-      element: SchemaElement { id, name, bizName, type, description, … },
-      similarity, detectWord, word, llmMatched
-  }, … ]
+- `userText`：原始问句  
+- `retrievedInfo`：LLM 路径上**各片段召回并集**的 `EmbeddingResult` JSON（`JSONObject.toJSONString(results)`；构建过程见第一步）
+
+问句「比亚迪期内溢利」时，HanLP 多段召回合并后的入参示意（条数已缩短；`detectWord` 标明来自哪一段）：
+
+```text
+比亚迪 → （维值多半不在 meta 向量，常空/噪声；实体靠 KeywordMapper）
+期内   → 报告期、会计期间…
+溢利   → 净利润、扣非净利润、利润总额…
+         ↓ id 去重
+    retrievedInfo 整包进 prompt
 ```
 
-下游 Parser（`OnePassSCSqlGenStrategy`）吃的是**映射后的 schema 文本**，不是原始 200 张表。
+```json
+[
+  { "id": "105", "name": "净利润",     "similarity": 0.91, "detectWord": "溢利", "llmMatched": false,
+    "metadata": { "type": "METRIC", "bizName": "net_profit", "dataSetId": "1_" } },
+  { "id": "106", "name": "扣非净利润", "similarity": 0.88, "detectWord": "溢利", "llmMatched": false,
+    "metadata": { "type": "METRIC", "bizName": "net_profit_excluding", "dataSetId": "1_" } },
+  { "id": "107", "name": "利润总额",   "similarity": 0.86, "detectWord": "溢利", "llmMatched": false,
+    "metadata": { "type": "METRIC", "bizName": "total_profit", "dataSetId": "1_" } },
+  { "id": "301", "name": "报告期",     "similarity": 0.83, "detectWord": "期内", "llmMatched": false,
+    "metadata": { "type": "DIMENSION", "bizName": "report_period", "dataSetId": "1_" } },
+  { "id": "302", "name": "会计期间",   "similarity": 0.80, "detectWord": "期内", "llmMatched": false,
+    "metadata": { "type": "DIMENSION", "bizName": "accounting_period", "dataSetId": "1_" } }
+]
+```
 
-### 第三步：评测期强制开启 + 对比测量
+出参（不定长 ID 列表，要求纯 JSON、不要 markdown 代码块）：
 
-**为什么单独成步**：产品代码默认 `useLLM=false`，但评测需要对比"开 vs 不开"的效果差异。评测期临时把 `EmbeddingMatchStrategy` 里的 `useLLM` 硬编码改成 `true`（Force enable for measurement），加 token 估算日志，跑完 200 条全量评测后回滚。
+```json
+["105", "301"]
+```
 
-**这是评测脚手架，不是产品代码**——面试时要讲清"产品代码默认关闭，业务侧手动打开"和"评测期临时硬开"的区分。
+→ `filter(id ∈ 列表)`，命中项 `llmMatched=true`。空响应则清空本路 `results`；格式烂了走 §4 坑 3 的解析兜底 / retry。
 
-### 第四步：上线后兜底——NPE 修复
+#### 3）合入后写回哪里
 
-**问题**：上线后发现 `detectByBatch` 在候选为空的边界场景下抛 NPE。
-
-**修复**：加空值兜底（约 8 行代码），在 `detectByBatch` 入口判断候选列表非空。
-
-**关键类名**：`EmbeddingMatchStrategy.detectByBatch` NPE 兜底
+精选后的 `EmbeddingResult` 经 `EmbeddingMapper.doMap` 写成 `SchemaElementMatch`（带上 `llmMatched`）进入 `SchemaMapInfo`；末尾 `MapFilter.filter` 做 dataSet/短词等规则，其中短词规则对 LLM 命中项放行。下游 Parser 只吃映射后的 schema，不吃全库表。
 
 ---
 
@@ -151,24 +195,28 @@ LLM filter 不是"加上就涨点"，评测驱动的 prompt 迭代是主要工�
 
 ### 坑 2：LLM 过度自信，理由是事后合理化
 
-- **现象**：LLM 选了错误字段后还给了一段"看似合理的推理"——如"扣非利润最接近净利润的概念"
-- **业界对照**：FinVerBench 论文（arXiv 2506）发现 GPT-4.1 在财务校验任务上 95.3% 假阳率——它把 41 个正确的报表全部判错，每一个都给了"看似合理的计算理由"。论文结论：**LLM 给的"理由"不能作为正确性的证据**
-- **修复**：不在运行时依赖 LLM 的理由做正确性判断。转而用**执行结果反向校验**——跑 SQL 后检查数值是否符合 FinVerBench 四类约束（Arithmetic / Cross-Statement / YoY / Magnitude），不齐就触发兜底
-- **评测 vs 运行的区分**：评测/调试时 prompt 保留 reasoning 字段用于人工分析 bad case；实际运行时 reasoning 不参与下游决策——Corrector/Translator 只用 LLM 选出的字段 ID 列表
+- **现象**：早期 prompt 让模型「先写理由再选 ID」。选错时仍能写出一段「看似合理」的推理（如「扣非利润最接近净利润」）——理由是事后合理化，还会干扰选对
+- **业界对照**：FinVerBench（arXiv 2506）结论同向——**LLM 给的「理由」不能当正确性证据**
+- **修复（评测直接对比）**：不让输出理由，**只输出选项 ID 数组**（如 `["105","301"]`）。下游 Corrector/Translator 也只吃 ID，不读自然语言解释
+- **效果**：比「带 reasoning」约好 **5pp**
 
-### 坑 3：候选太多时 LLM 注意力首尾偏置
-
-- **现象**：Top-10 候选拼进 prompt 时，中间 rank 4-7 的候选容易被 LLM 忽略——它倾向于选 rank 1 或 rank 10 附近的
-- **业界对照**：学术界 RSL-SQL（arXiv 2411.00073，Spider leaderboard SOTA）建议 Top-K=5 而非 10
-- **修复**：把 Top-10 限制为 Top-5，给每个候选定稳定编号（#C1, #C2...），prompt 里要求 LLM "逐个评估每个候选的 COMMENT 与 query 的匹配度"
-- **效果**：候选数从 10 降到 5 后，中间候选被忽略的问题基本消除
-
-### 坑 4：JSON 格式不稳定
+### 坑 3：JSON 格式不稳定
 
 - **现象**：原版 prompt 要求 JSON 输出，但实际约 5-15% 的输出会带 markdown fence（```json）、寒暄（'Sure, here are...'）、或 Python 集合格式（`{'id1'}` 而非 JSON `["id1"]`）
 - **业界对照**：业界实测纯 prompt 要求 JSON 只能拿到 80-95% 稳定性；Google Cloud 六大失败模式之一就是"Messy Output"
 - **修复**：① 开启 LLM 的 `json_format=true`（structured output）；② 加 callback 后处理用 regex 提取 `[...]` 段做兜底；③ parse 失败时 retry-with-error-feedback（把错误信息塞回 prompt 重试 1 次）
 - **效果**：格式失败率从 ~12% 降到 <2%
+
+### 坑 4：`detect` 编排——先 if-else 二选一，再改回两路并集
+
+- **第一版想法**：开 LLM 就用 if-else——`useLLM ? detectWithLLM() : super.detect()`，以为「有精选就不必再跑旧滑窗召回」，结构也更干净。
+- **现象**：评测上部分 case **召回变差**。滑窗 n-gram 能打中的片段，HanLP 切词未必有；listwise 又会再收窄。二选一只留路径 B 时，等于拆掉原有 Embedding 保底——LLM 空响应 / 过滤过狠 / 切段不一致时，整路 Embedding 直接变瘦。
+- **改回（现状）**：始终跑路径 A（滑窗 + `useLlm=false`），`useLLM` 时再 **`addAll` 路径 B**（HanLP + listwise），最后按 id `distinct`。
+  - A：宽召回保底，`llmMatched=false`
+  - B：近义消歧精选，`llmMatched=true`
+  - B 失败返回 empty 时，A 仍在——增强挂件，不是替换主干
+- **代价（面试可主动说）**：同一问句可能打两遍向量库；A 路未过 LLM 的候选也会进 `mapInfo`，池子偏宽。更「纯」的做法是并集召回后 **统一 listwise 一次**，或接受 if-else 并补齐切段——当时优先保召回、少动原链路。
+- **和附录的关系**：附录阶段二画的「A ∪ B」是 **迭代后的定稿**；if-else 是中间踩坑方案。
 
 ### 调整后的 prompt（最终版本要点）
 
@@ -189,276 +237,304 @@ LLM filter 不是"加上就涨点"，评测驱动的 prompt 迭代是主要工�
 4. 输出 JSON 数组，只含 ID，如: ["#C2"]
 ```
 
-关键变化：① 显式强调 COMMENT 优先；② 候选编号 + 逐个评估；③ 不确定返回多个；④ 限制 Top-5。
-
-### 剩余 19% 的错误归因（按严重程度）
-
-1. **注释缺失导致 LLM 盲猜**（约 8%，最大瓶颈）——约 25% 的历史遗留字段没有中文注释，正在推注释补全
-2. **低频实体值不在词典里**（约 4%）——HanLP 词典每天从数据库导 top 10 万高频值，小众公司名排在 10 万以外
-3. **LLM 过度自信 + 格式不稳定**（约 3%）——已在坑 2/坑 4 处理
-4. **跨主题域歧义**（约 2%）——"PE"在金融是市盈率，在行为实验域可能是心理量表维度
-5. **隐式时间/多指标歧义**（约 2%）——"去年"是自然年还是财年
+关键变化：① 显式强调 COMMENT 优先；② 候选编号 + 逐个评估；③ 不确定返回多个；④ 只输出 ID、不写理由（见坑 2）。
 
 ---
 
 ## 5. 成果展示：怎么衡量，效果如何
 
-### 评测口径
+### 5.1 怎么评：分层口径 + Gold
 
-**⚠️ 前置澄清：同一批 200 条 query，两套 gold，测的层次不同**
+**同一批 200 条 query，两套 gold——Schema 分和端到端分不能混谈。**
 
-| 指标 | 测什么 | 评测集 | 用什么方法测 |
-|------|-------|-------|-----------|
-| SchemaMapper 映射准确率 **58%→81%** | **字段映射**（query → 多个语义元素 ID 是否全对）| **200 条 SchemaMapper 专属测评集**（从端到端集一一对应衍生）| Recall + Precision + **Exact Match（EM）** |
-| 端到端查询准确率 **45%→72%→87%** | **完整链路**（NL → SQL → 执行结果是否对）| **200 条自建端到端测评集**（先于 Schema 优化就有）| 执行准确率 + 五维度语义评分 |
+| 层次 | Headline | 测什么 | 方法 |
+|------|----------|--------|------|
+| **Schema 映射** | **58% → 81%** | query → 语义元素 ID **集合是否全对** | 召回率/精确率 + **样本级集合全等 EM** |
+| **端到端** | **45% → 72% → 87%** | NL → SQL → 执行结果是否对 | 执行准确率 + 五维语义评分 |
 
-两套评测集是**一一对应**的——同一批 200 条 query。端到端 gold 看整条链路；SchemaMapper gold 只是其中的字段映射那一层。数字不能混谈，但 query 不是两套无关的题。
+全等 EM：选出的集合与 gold **完全一致**才记 1（多选、漏选都算 0），严于「覆盖即可」的论文口径，不宜横比。Schema 分只说明映射；端到端还叠 SQL 等错误。
 
-**SchemaMapper 200 条专属测评集怎么来的**：不是从线上失败 case 现抽的——线上那 50 条只够定方向。专属集是从已有的端到端测评集倒推出来的：每条端到端标注里本来就包含正确的语义元素集合（`gold_elements`：METRIC / DIMENSION / ENTITY…），SchemaMapper 专属测评集 = 抽出这 200 条的 `gold_elements` 层，只评字段映射，不跑 SQL。
+Gold 来自端到端标注里的 `gold_elements`，抽出后只评 Mapper、不跑 SQL（线上约 50 条只够定方向，不是评测集来源）。例「比亚迪期内溢利」：METRIC 净利润 `(105)`、ENTITY 比亚迪 `(201)`（Keyword 命中也计入）、可选 DIMENSION 报告期 `(301)`。
 
-### 58%→81% 具体怎么测的
+### 5.2 对照结果：无 LLM 精选 vs 有 LLM 精选
 
-一条 query 如"比亚迪去年的营收和净利润"的 Schema gold 是一个字段集合：
-- METRIC: 营业收入 (id=101)
-- METRIC: 净利润 (id=105)
-- ENTITY: 比亚迪 (id=201, value=002594)
-- DIMENSION: 报告期 (id=301, value=2025)
+**比的不是「整条解析开不开大模型」**，而是 Embedding 召回之后要不要再做 listwise ID 精选。规则、语义层、200 题和 gold 两边相同；只改是否走 `detectWithLLM`。
 
-SchemaMapper 也输出一个选中字段集合。评测用信息检索的三件套：
+| | **T0：无 LLM 过滤** | **T1：有 LLM 过滤** |
+|--|---------------------|---------------------|
+| 规则 + Embedding 召回 | 有 | 有 |
+| listwise 精选 ID | **关**（纯相似度 + 阈值） | **开** |
+| Schema 全等 EM | **58%** | **81%** |
+| 同期端到端（记忆库未上） | **45%** | **72%** |
 
-| 指标 | 公式 | 含义 | 58%→81% 用的 |
-|------|------|------|-------------|
-| **Recall（召回率）** | gold 中被选中的数 / gold 总数 | "该选的都选了吗" | T0 ~70% → T1 ~90% |
-| **Precision（准确率）** | 选中的字段里对的数 / 选中总数 | "选的有多少是对的" | T0 ~65% → T1 ~88% |
-| **Exact Match（EM）** | 选中集合 == gold 集合 → 1 分，否则 0 分 | "**全对了吗**" | **58% → 81%** ⭐ |
+附指标：召回率 ~70%→~90%，精确率 ~65%→~88%。Headline 用**全等 EM**（多选也算错）。T0 纯向量 + 阈值常见两种败法，都会直接 EM=0：
 
-58%→81% 测的是 **EM（精确匹配率）**——200 条里选中字段集合和 gold 集合完全一致的比例。最严格：多选一个、漏选一个都算 0 分。
+1. **搞错**——近义簇排错（如「期内溢利」选成利润总额）  
+2. **多出来**——阈值内塞进噪声维/近邻指标，gold 都在也因多余 ID 不得分  
 
-### LLM 消歧显著解决的问题（+23pp 主要来自这三类）
+T1 listwise 主要解决**语义相近**（近义簇消歧、砍冗余），全等 EM 又偏准确率（多一个无关 ID 就 0），所以精确率与 EM 一起抬。召回不够时先调向量召回的 top-k（`embedding.number`），再交给 listwise；端到端 45%→72% 是 mapping 变干净的下游红利（72%→87% 才是记忆库）。
 
-1. **语义相近但业务含义不同的消歧** ⭐ 最大贡献（约 +12pp）——"净利润"vs"利润总额"vs"营业利润"，这类 case 从 ~30% 提升到 ~85%
-2. **同义词/别名识别**（约 +6pp）——"营收"="营业收入"
-3. **衍生指标识别**（约 +5pp）——ROE 在语义层 measures 定义后 LLM 能选出来
+剩余 **19%** 还可继续修（按严重程度）：
 
-### 业界对标
+1. **COMMENT 建设与质量仍不足**（约 10%）——历史字段缺注释、口径写得含糊时，listwise 只能靠字段名猜；继续推注释补全与口径规范  
+2. **跨主题域歧义 / 缺业务背景**（约 5%）——如 "PE" 金融市盈率 vs 行为实验量表；单靠候选 COMMENT 不够，需主题域/业务上下文  
+3. **候选池变大后 listwise 注意力涣散**（约 4%）——片段/候选数上去后，中间项易被忽略；进 prompt 前再截 Top-K、或分段精选后再合并
 
-FinStat2SQL（arXiv 2506.23273）在金融报表 Text2SQL 里也用"向量召回 + LLM 二次判断"的两阶段消歧处理"Net Income (IFRS) vs Profit After Tax (VAS)"的术语差异——和我们的方案是同一个套路。
-
-### 评测输出 JSON 示例（错误 case——LLM 忽略 COMMENT + 漏选维度）
+### 5.3 单条评测输出示例（bad case）
 
 ```json
 {
   "query_id": 78,
-  "query_text": "比亚迪的扣非利润",
+  "query_text": "比亚迪期内溢利",
   "schema_mapper_output": {
     "candidates": [
-      {"rank": 1, "id": 105, "name": "净利润", "bizName": "net_profit", "comment": "本期合并口径净利润", "similarity": 0.91},
-      {"rank": 2, "id": 106, "name": "扣非净利润", "bizName": "net_profit_excluding", "comment": "扣除非经常性损益后的净利润", "similarity": 0.88},
-      {"rank": 3, "id": 107, "name": "利润总额", "bizName": "total_profit", "comment": "税前利润总额", "similarity": 0.85}
+      {"id": "105", "name": "净利润", "detectWord": "溢利", "similarity": 0.91, "comment": "合并口径净利润"},
+      {"id": "106", "name": "扣非净利润", "detectWord": "溢利", "similarity": 0.88, "comment": "扣除非经常性损益后的净利润"},
+      {"id": "107", "name": "利润总额", "detectWord": "溢利", "similarity": 0.86, "comment": "税前利润总额"},
+      {"id": "301", "name": "报告期", "detectWord": "期内", "similarity": 0.83, "comment": "报告期/会计期间"}
     ],
-    "llm_selected": [105],
-    "llm_reasoning": "'扣非利润'最接近'净利润'"
+    "llm_selected": ["107", "301"]
   },
-  "gold_elements": [106, 201],
-  "selected_elements": [105],
-  "metrics": {
-    "recall": 0.0,
-    "precision": 0.0,
-    "exact_match": false
-  },
-  "difficulty": "hard",
-  "error_type": "选错（gold 包含 id=106 扣非净利润，但 LLM 选了 id=105 净利润）",
-  "error_detail": "正确字段'扣非净利润'（rank 2，COMMENT='扣除非经常性损益后的净利润'）在候选里，但 LLM 只看字段名选了'净利润'（rank 1）——COMMENT 未被充分利用。同时 gold 里的 ENTITY'比亚迪'(id=201) 也没被选中"
+  "gold_elements": [105, 201],
+  "selected_elements": [107, 301],
+  "metrics": { "recall": 0.0, "precision": 0.0, "exact_match": false },
+  "error_type": "错选",
+  "error_detail": "gold 要净利润+比亚迪；模型选了利润总额+报告期（近义选错；实体应由 Keyword 贡献）"
 }
 ```
 
-每条评测输出包含：候选排序列表、LLM 选中的字段集合、gold 字段集合、三指标、错误类型（`error_type` 分三类：**召回遗漏** / **选错** / **格式失败**）。混淆矩阵按这三类 + 元素对统计。
+错误类型：**召回遗漏**（gold 不在池）/ **错选**（在池里选错）/ **多选**（多带无关 → 全等 EM=0）/ **格式失败**（见 §4 坑 3）。混淆矩阵按类型 + 易混元素对统计，驱动 prompt 迭代。
 
 ---
 
 ## 附录：核心代码标本
 
-> **执行链路**：`EmbeddingMapper.doMap`（入口）→ `EmbeddingMatchStrategy.detectByBatch`（向量召回）→ `detectWithLLM`（LLM 重排增强 ⭐）→ `MapFilter`（规则后置）
+先看清**整条调用链**（面试口述按这个顺序），再看分阶段代码：
 
-### 阶段一：入口 —— EmbeddingMapper.doMap
+```text
+EmbeddingMapper.accept? ──否──▶ 不跑 Embedding
+        │是（LOOSE / LLM_OR_RULE）
+        ▼
+EmbeddingMapper.doMap
+        │
+        ▼
+BaseMapper.getMatches(ctx, EmbeddingMatchStrategy)
+        │  ① HanLP 切 terms（再按 dataSet 过滤）
+        │  ② matchStrategy.match(ctx, terms, dataSetIds)
+        │        └─ BaseMatchStrategy.match
+        │              └─ detect(...)          ★ 编排入口（阶段二）
+        │  ③ 从 Map<MatchText, List> 取第一份非空 List 返回
+        ▼
+doMap：EmbeddingResult → SchemaElementMatch（带 llmMatched）→ mapInfo
+        ▼
+BaseMapper.map 末尾 MapFilter.filter（短词对 llmMatched 放行）
+```
 
-> 来源：`EmbeddingMapper.doMap`
-> 对应正文：行动计划"调用链路"
-> 面试要点：accept 判断只在 LOOSE 或 LLM_OR_RULE 时进入；doMap 调用 EmbeddingMatchStrategy 完成召回 + LLM 增强；结果含 llmMatched 标记传给下游
+`detect` 内部的编排（先召回、再精选；**为何是并集不是 if-else → 见 §4 坑 4**）：
+
+```text
+EmbeddingMatchStrategy.detect
+  ├─【路径 A】super.detect = BatchMatchStrategy.detect
+  │     滑窗切段 → detectByBatch(segments, useLlm=false)
+  │       └─ 只做向量召回（有阈值），不做 listwise
+  │
+  └─【路径 B】useLLM 时 detectWithLLM
+        HanLP 切词 → detectByBatch(segments, useLlm=true)
+          └─ 先同样并行向量召回（跳过阈值）
+          └─ 再 1 次 listwise：retrievedInfo → 返回 ID → 过滤并 llmMatched=true
+
+  最后：A ∪ B，按 id distinct（迭代后定稿；中间曾试过 if-else 二选一只留 B）
+```
+
+共用引擎是 `detectByBatch`（阶段三）：**向量召回始终发生；`useLlm` 只决定召回后要不要 listwise**。
+
+---
+
+### 阶段一：从 doMap 接到 Strategy —— 桥接层
+
+> 来源：`EmbeddingMapper` + `BaseMapper.getMatches` + `BaseMatchStrategy.match`  
+> 作用：证明 `doMap` **不会直接**调 `detectByBatch`，而是经 getMatches → match → **detect**
 
 ```java
+// ----- EmbeddingMapper -----
 @Override
 public boolean accept(ChatQueryContext chatQueryContext) {
-    boolean b0 = MapModeEnum.LOOSE.equals(chatQueryContext.getRequest().getMapModeEnum());
-    boolean b1 = chatQueryContext.getRequest().getText2SQLType() == Text2SQLType.LLM_OR_RULE;
-    return b0 || b1;
+    boolean loose = MapModeEnum.LOOSE.equals(/* mapMode */);
+    boolean llmOrRule = /* text2SQLType */ == Text2SQLType.LLM_OR_RULE;
+    return loose || llmOrRule; // 不满足则整段 Embedding 不跑
 }
 
 public void doMap(ChatQueryContext chatQueryContext) {
-    SchemaMapInfo mappedInfo = chatQueryContext.getMapInfo();
+    EmbeddingMatchStrategy matchStrategy = /* Spring 取 Bean */;
 
-    // 1. Query from embedding by queryText
-    EmbeddingMatchStrategy matchStrategy = ContextUtils.getBean(EmbeddingMatchStrategy.class);
+    // 唯一入口：把「怎么召回」交给 Strategy；自己只负责写回 mapInfo
     List<EmbeddingResult> matchResults = getMatches(chatQueryContext, matchStrategy);
 
-    // Process match results
-    HanlpHelper.transLetterOriginal(matchResults);
-
-    // 2. Build SchemaElementMatch based on match results
+    HanlpHelper.transLetterOriginal(matchResults); // 略
     for (EmbeddingResult matchResult : matchResults) {
-        Long elementId = Retrieval.getLongId(matchResult.getMetadata().get("id"));
-        Long dataSetId = Retrieval.getLongId(matchResult.getMetadata().get("dataSetId"));
-        if (Objects.isNull(dataSetId)) { continue; }
-        SchemaElementType elementType = SchemaElementType.valueOf(matchResult.getMetadata().get("type"));
-        SchemaElement schemaElement = getSchemaElement(dataSetId, elementType, elementId,
-                chatQueryContext.getSemanticSchema());
-        if (schemaElement == null) { continue; }
-
-        SchemaElementMatch schemaElementMatch = SchemaElementMatch.builder()
-                .element(schemaElement).frequency(BaseWordBuilder.DEFAULT_FREQUENCY)
-                .word(matchResult.getName()).similarity(matchResult.getSimilarity())
-                .detectWord(matchResult.getDetectWord()).build();
-        schemaElementMatch.setLlmMatched(matchResult.isLlmMatched());
-
-        addToSchemaMap(chatQueryContext.getMapInfo(), dataSetId, schemaElementMatch);
+        /* 读 metadata → 查 SchemaElement → 组装 SchemaElementMatch
+           → setLlmMatched → addToSchemaMap（按 dataSetId 入桶） */
     }
+}
+
+// ----- BaseMapper.getMatches：doMap → detect 的桥 -----
+public <T> List<T> getMatches(ChatQueryContext ctx, MatchStrategy matchStrategy) {
+    List<S2Term> terms = HanlpHelper.getTerms(/* queryText */, /* model↔dataSet */);
+    terms = HanlpHelper.getTerms(terms, /* 请求 dataSetIds 再滤 */);
+
+    // 这里进入 EmbeddingMatchStrategy 所在继承链的 match()
+    Map<MatchText, List<T>> matchResult =
+            matchStrategy.match(ctx, terms, /* dataSetIds */);
+
+    // 约定：取第一份非空 List 作为本次 matches
+    return /* matchResult 中第一个非空 value，否则 empty */;
+}
+
+// ----- BaseMatchStrategy.match：再薄薄包一层，真正干活的是 detect -----
+public Map<MatchText, List<T>> match(ChatQueryContext ctx, List<S2Term> terms, Set<Long> dataSetIds) {
+    List<T> detects = detect(ctx, terms, dataSetIds); // ★ 多态到 EmbeddingMatchStrategy.detect
+    Map<MatchText, List<T>> result = new HashMap<>();
+    result.put(/* MatchText 包一下原句 */, detects);
+    return result;
 }
 ```
 
-### 阶段二：向量召回 —— detectByBatch（基础版）
+---
 
-> 来源：`EmbeddingMatchStrategy.detectByBatch` + `detectByQueryTextsSub`
-> 对应正文：行动计划第一步（并行化）
-> 面试要点：批量分片并行召回；阈值过滤只在非 LLM 路径生效（LLM 路径跳过阈值，交给 LLM 精选）
+### 阶段二：编排中枢 —— EmbeddingMatchStrategy.detect（先召回，再 LLM）
+
+> 来源：`EmbeddingMatchStrategy.detect` / `detectWithLLM` + 父类 `BatchMatchStrategy.detect`  
+> 作用：看清「两路召回怎么排、LLM 挂在哪一路」——**这是串联阶段一与阶段三的枢纽**
 
 ```java
-public List<EmbeddingResult> detectByBatch(ChatQueryContext chatQueryContext,
-        Set<Long> detectDataSetIds, Set<String> detectSegments, boolean useLlm) {
-    int embeddingMapperBatch = Integer.valueOf(
-            mapperConfig.getParameterValue(MapperConfig.EMBEDDING_MAPPER_BATCH));
+// ----- EmbeddingMatchStrategy.detect：getMatches/match 最终落到这里 -----
+@Override
+public List<EmbeddingResult> detect(ChatQueryContext ctx, List<S2Term> terms, Set<Long> dataSetIds) {
+    // ========== 路径 A：只向量召回（无 LLM）==========
+    // super.detect → BatchMatchStrategy.detect：
+    //   按 word.size/step 滑窗切段 → detectByBatch(segments, useLlm=false)  【阶段三】
+    List<EmbeddingResult> baseResults = super.detect(ctx, terms, dataSetIds);
 
-    List<String> queryTextsList = detectSegments.stream().map(String::trim)
-            .filter(StringUtils::isNotBlank).collect(Collectors.toList());
-    List<List<String>> queryTextsSubList = Lists.partition(queryTextsList, embeddingMapperBatch);
-
-    // Create and execute tasks for each batch (并行)
-    List<Supplier<List<EmbeddingResult>>> tasks = new ArrayList<>();
-    for (List<String> queryTextsSub : queryTextsSubList) {
-        tasks.add(createTask(chatQueryContext, detectDataSetIds, queryTextsSub, useLlm));
+    // ========== 路径 B：再召回一轮 + listwise 精选（与 A 并集，非 if-else；见 §4 坑 4）==========
+    boolean useLLM = true; // 评测期硬开；产品应读 EMBEDDING_MAPPER_USE_LLM
+    if (useLLM) {
+        List<EmbeddingResult> llmResults = detectWithLLM(ctx, dataSetIds);
+        if (!CollectionUtils.isEmpty(llmResults)) {
+            baseResults.addAll(llmResults); // 增强叠加，不是替换路径 A
+        }
     }
-    Set<EmbeddingResult> results = executeTasks(tasks);
+    return baseResults.stream().distinct().collect(Collectors.toList()); // equals 按 id
+}
 
-    // ... useLlm 分支见阶段三 ...
+// 路径 B 入口：换一套切段方式，并打开 useLlm
+private List<EmbeddingResult> detectWithLLM(ChatQueryContext ctx, Set<Long> dataSetIds) {
+    String queryText = /* 用户原句 */;
+    if (StringUtils.isBlank(queryText)) { return Collections.emptyList(); }
+
+    // 与路径 A 的滑窗不同：HanLP 分词 + 词性过滤 → segments
+    Set<String> detectSegments = extractValidSegments(queryText);
+    if (CollectionUtils.isEmpty(detectSegments)) { return Collections.emptyList(); }
+
+    // 同一个 detectByBatch；useLlm=true ⇒ 召回后多跑 listwise【阶段三】
+    return detectByBatch(ctx, dataSetIds, detectSegments, true);
+}
+
+// ----- 父类 BatchMatchStrategy.detect：路径 A 的切段方式 -----
+@Override // 在 BatchMatchStrategy 中
+public List<EmbeddingResult> detect(...) {
+    Set<String> detectSegments = new HashSet<>();
+    // 滑窗：size=3, step=2，例「期内溢利」→ 期内溢 / 溢利 …
+    for (/* start += step */) {
+        detectSegments.add(/* substring(start, start+size) */);
+    }
+    // 无第四参时走重载：detectByBatch(..., useLlm=false)
+    return detectByBatch(ctx, dataSetIds, detectSegments);
+}
+```
+
+---
+
+### 阶段三：共用引擎 —— detectByBatch（向量召回 → 可选 listwise）
+
+> 来源：`EmbeddingMatchStrategy.detectByBatch` / `detectByQueryTextsSub`  
+> 作用：路径 A/B **共用**；差别只在 `useLlm` 与传入的 `detectSegments`  
+> 对应正文：第一步并行化；第二步入参/出参
+
+```java
+public List<EmbeddingResult> detectByBatch(..., Set<String> detectSegments, boolean useLlm) {
+    // —— ① 向量召回（A/B 都走）——
+    List<List<String>> batches = Lists.partition(/* 非空片段 */, /* embedding.batch */);
+    List<Supplier<List<EmbeddingResult>>> tasks = new ArrayList<>();
+    for (List<String> oneBatch : batches) {
+        // 每个任务内部：detectByQueryTextsSub（每段 top5、阈值、批内截断）
+        tasks.add(createTask(/* ctx, dataSetIds, oneBatch, useLlm */));
+    }
+    Set<EmbeddingResult> results = executeTasks(tasks); // mapExecutor 并行 + 按 id 合并
+
+    // —— ② 仅 useLlm=true（路径 B）时：对合并结果做 1 次 listwise ——
+    if (useLlm) {
+        Map<String, Object> variable = new HashMap<>();
+        variable.put("userText", /* 原句 */);
+        variable.put("retrievedInfo", JSONObject.toJSONString(results)); // 多片段并集
+
+        Prompt prompt = PromptTemplate.from(LLM_FILTER_PROMPT).apply(variable);
+        String response = ModelProvider.getChatModel(/* 配置 */)
+                .generate(/* prompt 文本 */); // 一次调用
+
+        if (StringUtils.isBlank(response)) {
+            results.clear();
+        } else {
+            List<String> ids = JSONObject.parseArray(response, String.class); // 如 ["105","301"]
+            results = results.stream()
+                    .filter(r -> ids.contains(r.getId()))
+                    .collect(Collectors.toSet());
+            results.forEach(r -> r.setLlmMatched(true));
+        }
+    }
+    // useLlm=false（路径 A）：到此结束，带着阈值过滤后的召回结果返回
     return new ArrayList<>(results);
 }
 
-private List<EmbeddingResult> detectByQueryTextsSub(Set<Long> detectDataSetIds,
-        List<String> queryTextsSub, ChatQueryContext chatQueryContext, boolean useLlm) {
-    double threshold = Double.parseDouble(mapperConfig.getParameterValue(EMBEDDING_MAPPER_THRESHOLD));
-    int embeddingNumber = Integer.parseInt(mapperConfig.getParameterValue(EMBEDDING_MAPPER_NUMBER));
-    int embeddingRoundNumber = Integer.parseInt(mapperConfig.getParameterValue(EMBEDDING_MAPPER_ROUND_NUMBER));
+// 单个并行任务里真正打向量库
+private List<EmbeddingResult> detectByQueryTextsSub(..., List<String> queryTextsSub, boolean useLlm) {
+    int embeddingNumber = /* 默认 5：每段召回条数 */;
+    double threshold = /* 默认 0.9 */;
+    int roundNumber = /* 默认 10：批内截断系数 */;
 
-    RetrieveQuery retrieveQuery = RetrieveQuery.builder().queryTextsList(queryTextsSub).build();
-    List<RetrieveQueryResult> retrieveQueryResults = metaEmbeddingService.retrieveQuery(
-            retrieveQuery, embeddingNumber, modelIdToDataSetIds, detectDataSetIds);
+    RetrieveQuery retrieveQuery = RetrieveQuery.builder() /* .queryTextsList(本批) */ .build();
+    List<RetrieveQueryResult> retrieved = metaEmbeddingService.retrieveQuery(
+            retrieveQuery, embeddingNumber, /* model↔dataSet */, detectDataSetIds);
 
-    // 阈值过滤只在非 LLM 路径生效
-    List<EmbeddingResult> collect = retrieveQueryResults.stream().peek(result -> {
-        if (!useLlm && CollectionUtils.isNotEmpty(result.getRetrieval())) {
-            result.getRetrieval().removeIf(retrieval ->
-                    !result.getQuery().contains(retrieval.getQuery())
-                    && retrieval.getSimilarity() < threshold);
-        }
-    }).filter(result -> CollectionUtils.isNotEmpty(result.getRetrieval()))
-            .flatMap(result -> result.getRetrieval().stream()
-                    .map(retrieval -> convertToEmbeddingResult(result, retrieval)))
-            .collect(Collectors.toList());
+    List<EmbeddingResult> collect = retrieved.stream().peek(result -> {
+        if (!useLlm) { /* similarity < threshold 等则丢；LLM 路径跳过阈值 */ }
+    }).flatMap(/* → EmbeddingResult，detectWord=该段查询词 */).collect(Collectors.toList());
 
     return collect.stream()
-            .sorted(Comparator.comparingDouble(EmbeddingResult::getSimilarity).reversed())
-            .limit(embeddingRoundNumber * queryTextsSub.size()).collect(Collectors.toList());
+            .sorted(/* similarity 降序 */)
+            .limit(roundNumber * queryTextsSub.size())
+            .collect(Collectors.toList());
 }
 ```
 
-### 阶段三：LLM 重排增强 ⭐ —— detectWithLLM + LLM 分支
-
-> 来源：`EmbeddingMatchStrategy.detect` + `detectWithLLM` + `detectByBatch` 的 useLlm 分支
-> 对应正文：行动计划第二步（五件套）；迭代优化坑 1-4
-> 面试要点：retrievedInfo = EmbeddingResult JSON；prompt 让 LLM 选 ID 列表；选中的标 llmMatched=true，未选的丢弃；**当前代码 useLLM=true 写死（Force enable for measurement）**
-
-```java
-@Override
-public List<EmbeddingResult> detect(ChatQueryContext chatQueryContext, List<S2Term> terms,
-        Set<Long> detectDataSetIds) {
-    // 1. Base detection
-    List<EmbeddingResult> baseResults = super.detect(chatQueryContext, terms, detectDataSetIds);
-
-    boolean useLLM = true; // Force enable for measurement
-    if (useLLM) {
-        List<EmbeddingResult> llmResults = detectWithLLM(chatQueryContext, detectDataSetIds);
-        if (!CollectionUtils.isEmpty(llmResults)) {
-            baseResults.addAll(llmResults);
-        }
-    }
-    return baseResults.stream().distinct().collect(Collectors.toList());
-}
-
-private List<EmbeddingResult> detectWithLLM(ChatQueryContext chatQueryContext,
-        Set<Long> detectDataSetIds) {
-    try {
-        String queryText = chatQueryContext.getRequest().getQueryText();
-        if (StringUtils.isBlank(queryText)) { return Collections.emptyList(); }
-
-        Set<String> detectSegments = extractValidSegments(queryText);
-        if (CollectionUtils.isEmpty(detectSegments)) { return Collections.emptyList(); }
-
-        return detectByBatch(chatQueryContext, detectDataSetIds, detectSegments, true);
-    } catch (Exception e) {
-        log.error("Error in LLM detection for context: {}", chatQueryContext, e);
-        return Collections.emptyList();
-    }
-}
-
-// detectByBatch 的 useLlm=true 分支：
-if (useLlm) {
-    Map<String, Object> variable = new HashMap<>();
-    variable.put("userText", chatQueryContext.getRequest().getQueryText());
-    variable.put("retrievedInfo", JSONObject.toJSONString(results));  // EmbeddingResult JSON
-
-    Prompt prompt = PromptTemplate.from(LLM_FILTER_PROMPT).apply(variable);
-    ChatLanguageModel chatLanguageModel = ModelProvider.getChatModel(chatModelConfig);
-    String response = chatLanguageModel.generate(prompt.toUserMessage().singleText());
-
-    if (StringUtils.isBlank(response)) {
-        results.clear();
-    } else {
-        List<String> retrievedIds = JSONObject.parseArray(response, String.class);
-        results = results.stream().filter(t -> retrievedIds.contains(t.getId()))
-                .collect(Collectors.toSet());
-        results.forEach(r -> r.setLlmMatched(true));  // 标记 LLM 选中
-    }
-}
-```
+---
 
 ### 附：LLM_FILTER_PROMPT 模板常量
 
-> 来源：`EmbeddingMatchStrategy.LLM_FILTER_PROMPT`
-> 对应正文：迭代优化坑 1（LLM 忽略 COMMENT）+ 坑 4（JSON 格式不稳定）
-> 面试要点：原版 prompt 只让 LLM 看 retrievedInfo（整体 JSON），没显式引导看 COMMENT——这是最大 bad case 来源，驱动了"四维 COMMENT 增强"设计
+> 来源：`EmbeddingMatchStrategy.LLM_FILTER_PROMPT`  
+> 对应正文：§4 坑 1（忽略 COMMENT）、坑 3（JSON 不稳）
+> 面试要点：原版只塞整体 JSON、未强调 COMMENT——后续评测驱动才加强引导
 
 ```java
 private static final String LLM_FILTER_PROMPT =
         """
-                #Role: You are a professional data analyst specializing in metrics and dimensions.
-                #Task: Given a user query and a list of retrieved metrics/dimensions through vector recall,
-                please analyze which metrics/dimensions the user is most likely interested in.
+                #Role: 你是擅长指标/维度语义的数据分析师
+                #Task: 根据用户问句，从向量召回的候选里选出用户真正关心的项
                 #Rules:
-                1. Based on user query and retrieved info, accurately determine metrics/dimensions user truly cares about.
-                2. Do not return all retrieved info, only select those highly relevant to user query.
-                3. Maintain high quality output, exclude metrics/dimensions irrelevant to user intent.
-                4. Output must be in JSON array format, only include IDs from retrieved info, e.g.: ['id1', 'id2']
-                5. Return JSON content directly without markdown formatting
-                #Input Example:
+                1. 依据问句 + retrievedInfo，准确判断相关指标/维度
+                2. 不要原样返回全部召回，只留高度相关的
+                3. 排除与意图无关的项
+                4. 输出 JSON 数组，且只能是 retrievedInfo 里已有的 id，如 ['id1','id2']
+                5. 直接返回 JSON，不要 markdown 代码块
                 #User Query: {{userText}}
                 #Retrieved Metrics/Dimensions: {{retrievedInfo}}
                 #Output:""";
@@ -466,54 +542,45 @@ private static final String LLM_FILTER_PROMPT =
 
 ### 附：数据结构 —— EmbeddingResult
 
-> 来源：`EmbeddingResult`
-> 对应正文：行动计划第二步"数据字段"
-> 面试要点：llmMatched 字段是 LLM 增强新增的标记，下游 MapFilter 用它跳过短词过滤
+> 来源：`EmbeddingResult`  
+> 对应正文：第二步「llmMatched」  
+> 面试要点：`equals/hashCode` 按 id（合并去重用）；`llmMatched` 供 MapFilter 白名单
 
 ```java
 @Data
-@ToString
 public class EmbeddingResult extends MapResult {
-    private String id;
-    private Map<String, String> metadata;
-    private boolean llmMatched;  // LLM 增强新增字段
+    private String id;                          // schema 元素 id
+    private Map<String, String> metadata;       // type / dataSetId / bizName …
+    private boolean llmMatched;                 // 是否被 listwise 选中
 
-    @Override
-    public boolean equals(Object o) { /* by id */ }
-    @Override
-    public int hashCode() { /* by id */ }
-    @Override
-    public String getMapKey() { return this.getName() + Constants.UNDERLINE + this.getId(); }
+    @Override public boolean equals(Object o) { /* 只比 id */ }
+    @Override public int hashCode() { /* 只基于 id */ }
+    @Override public String getMapKey() { /* name + "_" + id */ }
 }
 ```
 
 ### 阶段四：规则后置 —— MapFilter 白名单
 
-> 来源：`MapFilter.filter` + `filterByDetectWordLenLessThanOne`
-> 对应正文：行动计划第二步"MapFilter 白名单"
-> 面试要点：短词过滤对 LLM 命中项跳过（`&& !schemaElementMatch.isLlmMatched()`）——这是 LLM 增强的配套改动，避免短词规则误杀 LLM 精选结果
+> 来源：`MapFilter`  
+> 对应正文：第二步五件套第 5 项  
+> 面试要点：短词过滤对 `llmMatched` 放行，避免误杀 LLM 精选
 
 ```java
 public static void filter(ChatQueryContext chatQueryContext) {
-    filterByDataSetId(chatQueryContext);
-    filterByDetectWordLenLessThanOne(chatQueryContext);
-    twoCharactersMustEqual(chatQueryContext);
-    // 按 QueryDataType 过滤（TAG/METRIC/DIMENSION）
-    switch (chatQueryContext.getRequest().getQueryDataType()) { ... }
-    filterByRules(chatQueryContext);
+    filterByDataSetId(chatQueryContext);           // 按 Agent/DataSet 可见范围裁剪
+    filterByDetectWordLenLessThanOne(chatQueryContext); // 短词过滤（见下，含 LLM 白名单）
+    twoCharactersMustEqual(chatQueryContext);      // 两字词需更严匹配等
+    // 按请求的 QueryDataType（TAG/METRIC/DIMENSION）再滤一层
+    switch (/* queryDataType */) { /* ... */ }
+    filterByRules(chatQueryContext);               // 其它规则（exact 优先等）
 }
 
 public static void filterByDetectWordLenLessThanOne(ChatQueryContext chatQueryContext) {
-    Map<Long, List<SchemaElementMatch>> dataSetElementMatches =
-            chatQueryContext.getMapInfo().getDataSetElementMatches();
-    for (Map.Entry<Long, List<SchemaElementMatch>> entry : dataSetElementMatches.entrySet()) {
-        List<SchemaElementMatch> value = entry.getValue();
-        if (!CollectionUtils.isEmpty(value)) {
-            // 短词过滤对 LLM 命中项跳过 —— LLM 增强的配套白名单
-            value.removeIf(schemaElementMatch ->
-                    StringUtils.length(schemaElementMatch.getDetectWord()) <= 1
-                    && !schemaElementMatch.isLlmMatched());
-        }
+    // 遍历 mapInfo 里各 dataSet 的 SchemaElementMatch 列表
+    for (/* 每个 dataSet 的 match 列表 value */) {
+        value.removeIf(m ->
+                StringUtils.length(m.getDetectWord()) <= 1   // detectWord 过短
+                && !m.isLlmMatched());                      // 但 LLM 选中的不删
     }
 }
 ```

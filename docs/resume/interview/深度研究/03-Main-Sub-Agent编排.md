@@ -2,7 +2,7 @@
 
 > 对应简历：问数结果深度研究 · 第二点（Main–Sub Agent 编排）
 > 题纲：[`../面试题纲.md`](../面试题纲.md) § 三 E13–E16
-> 索引本：[`02-面试问答.md`](./02-面试问答.md)（E 节已迁出至本文）
+> 指标 / 问题 / 改进：[`01-通用问答.md`](./01-通用问答.md)（E 节详解在本文）
 > 设计规格：[`../../../superpowers/specs/2026-08-05-main-sub-agent-deep-dive-design.md`](../../../superpowers/specs/2026-08-05-main-sub-agent-deep-dive-design.md)
 > 复习标本：`miro-flow-solution`（对齐工程细节；面试不主动对比 MiroFlow，不宣称「我发明框架」）
 
@@ -16,7 +16,7 @@
 - **Prompt 可答辩**：Main/Sub **段落大纲 + 每段职责**（§4），勿默写全文；含「工具开篇」与 cache 的诚实口径。
 - 再按一次任务跑通 Main→Sub→回传→final summary 的调用链（§1.3 / §2–§3 / §6–§7）；Prompt 见 §4；**代码只贴签名与关键分支**，其余用文字概括。
 - 钉死「简历并发」与「标本顺序执行」的可答辩关系。
-- 承接原 `02` E13–E16 详答，供面试深挖。
+- 承接原通用问答 E13–E16 详答，供面试深挖。
 
 ### 0.2 本文不做什么
 
@@ -62,19 +62,19 @@
    · 鉴权 / 配额 / 并发
    · 从 ChatQueryDO 取 question + textResult/textSummary + 维度/指标
    · 截断拼成 task + context；生成 jobId；写本地 PENDING
-   · @Async POST Python /v1/research/jobs（Bearer + X-Trace-Id）
-   · 立刻返回 {jobId, PENDING}（不阻塞问数主链路）
+   · 同步 POST Python /v1/research/jobs（Bearer + X-Trace-Id）
+   · 等入队 200 再返回 {jobId, PENDING}（不等 pipeline）
    │
    ▼
 [Python FastAPI · 同步路径]
-   · IntentClassifier.classify(task, context)
+   · IntentClassifier.classify(task)      # 只看原问题，不读 context
    ·   → (research_type, data_domain)     # 一次 LLM；失败 fallback default/unknown
-   · JobStore.create(PENDING) + BackgroundTasks → run_pipeline_async
-   · 立即 202
+   · JobStore.create(PENDING)          # INSERT 即入队
+   · 入队成功才 200
    │
-            ─── 异步路径（真正跑研究）───
+            ─── 独立 worker 扫表（真正跑研究）───
    ▼
-[run_pipeline_async]
+[claim_one_pending → run_pipeline_async]
    ① QueryRewriter.rewrite(task, research_type)
       · default：prepend 通用归因约束
       · financial_analyst / academic：原样
@@ -162,7 +162,7 @@ flowchart TD
 | ⑧ | 子摘要或 MCP 结果写回**主** history，回到 ④ | 主 Agent 只看见摘要/工具结果，不看见子会话全文 |
 | ⑨ | 主 Agent 基于当前主 history 做 final summary 并结束 | 触顶或失败仍可能尝试收束，不等于立刻丢弃证据 |
 
-更细的贴码分别在 §2（①–③ 含工具化）、§3（④–⑥）、§6（⑥b–⑦）、§7（⑨）；Prompt 文案见 §4。上游 ⓪ 的 Intent / Directive 贴码与契约见 `01`。
+更细的贴码分别在 §2（①–③ 含工具化）、§3（④–⑥）、§6（⑥b–⑦）、§7（⑨）；Prompt 文案见 §4。上游 ⓪ 的 Intent / Directive 贴码与契约见 `02`。
 
 ### 1.4 配置骨架（标本示例，非业务最优）
 
@@ -215,11 +215,11 @@ sub_agents:
 
 #### `prompt_class` 切换 vs Intent→Directive：模式相似，业务侧更准确叫 **query enhance**
 
-上游如何把 `full_task` 交进来，见 [§1.2](#12-上游衔接用户-query-如何进到-mainsub)。你直觉里「按任务类型换模板」和 `01` 的 IntentClassifier → ResearchDirective **确实同一类设计模式**——都是按任务特征选择一套 prompt 变体。业务接入后更贴切的说法是：
+上游如何把 `full_task` 交进来，见 [§1.2](#12-上游衔接用户-query-如何进到-mainsub)。你直觉里「按任务类型换模板」和 `02` 的 IntentClassifier → ResearchDirective **确实同一类设计模式**——都是按任务特征选择一套 prompt 变体。业务接入后更贴切的说法是：
 
 > Intent 做完分类后，路由机制本质是 **user query enhance**：把研究指导拼进交给 Main–Sub 的 task 文本，而不是热切换 Main 的 `prompt_class`。
 
-当前增强类型（命名以 `01` 为准）：
+当前增强类型（命名以 `02` 为准）：
 
 | `research_type` | 增强内容（概要） | 备注 |
 |-----------------|------------------|------|
@@ -227,7 +227,7 @@ sub_agents:
 | `academic` | 学术向：双语、置信度、红队等 | |
 | `default` | 通用研究指导；QueryRewriter 还可加轻量归因约束 | 分类失败也 fallback 到这里 |
 
-| 维度 | 标本 `prompt_class`（本文） | `01` 的 query enhance（Intent → Directive） |
+| 维度 | 标本 `prompt_class`（本文） | `02` 的 query enhance（Intent → Directive） |
 |------|---------------------------|-----------------------------------------------|
 | 抽象模式 | 按任务特征选 prompt 变体 | 按任务特征选 prompt 变体 |
 | 业务语义 | **编排角色**：怎么当 Main/Sub | **增强本条 query/task**：用什么研究套路 / 领域口径 |
@@ -950,14 +950,14 @@ final_answer_text = await self._handle_summary_with_context_limit_retry(
 
 > **权威详解：** [`05` §3 预算熔断 + 两类「并发」](./05-工程化能力.md#3-预算熔断--两类并发g22g23)（G22、G23）。
 
-编排主循环（[§3](#3-调用链精读主循环)）有两道基础预算：**`max_turns`** 限制 Agent 循环深度；**`max_tool_calls_per_turn`** 限制单轮只执行前 N 个 tool call（超出切片，不先全跑再统计）。标本一行：Main **20/10**、Sub worker **50/10**（`config/agent_llm_qwen37plus.yaml`）。触顶后仍尝试 final summary（[§7](#7-调用链精读主-agent-final-summary)）。**诚实口径：** qwen 标本的 `GPTOpenAIClient.update_message_history` 对 `tool_calls_exceeded` **接受但忽略**，不会把截断提示写入 message history——详见 [`05` §3.3.2](./05-工程化能力.md#332-第二层tool_calls_exceeded-截断单轮调用数)。
+编排主循环（[§3](#3-调用链精读主循环)）有两道基础预算：**`max_turns`** 限制 Agent 循环深度；**`max_tool_calls_per_turn`** 限制单轮只执行前 N 个 tool call（超出切片，不先全跑再统计）。标本一行：Main **20/10**、Sub worker **50/10**（`config/agent_llm_qwen37plus.yaml`）。触顶后仍尝试 final summary（[§7](#7-调用链精读主-agent-final-summary)）。**诚实口径：** qwen 标本的 `GPTOpenAIClient.update_message_history` 对 `tool_calls_exceeded` **接受但忽略**，不会把截断提示写入 message history——详见 [`05` §3.2](./05-工程化能力.md#32-两道预算别混成一共能调-200-次)。
 
 <a id="8-专节顺序执行-vs-简历并发"></a>
 ## 9. 专节：顺序执行 vs 简历「并发」
 
-> **权威详解：** 同上 [`05` §3](./05-工程化能力.md#3-预算熔断--两类并发g22g23) [§3.5–§3.7](./05-工程化能力.md#35-第一类并发单题内顺序调度)。
+> **权威详解：** 同上 [`05` §3](./05-工程化能力.md#3-预算熔断--两类并发g22g23) [§3.4](./05-工程化能力.md#34-并发到底指哪一层)。
 
-**单题内：** `src/core/orchestrator.py`（L1110–1150）对 `tool_calls[0][:max_tool_calls]` **顺序 `for` + `await`**（`run_sub_agent` / `execute_tool_call`），无 `gather`。**简历口径：** 架构支持无依赖子任务并行化，但当前标本是顺序调度；评测 `common_benchmark.run_parallel_inference` 的 `Semaphore + gather` 是**多题并行**，不是单题内同时跑 N 个子 Agent。完整对照、可背模板与易踩坑见 [`05` §3.5–§3.9](./05-工程化能力.md#35-第一类并发单题内顺序调度)。
+**单题内：** `src/core/orchestrator.py`（L1110–1150）对 `tool_calls[0][:max_tool_calls]` **顺序 `for` + `await`**（`run_sub_agent` / `execute_tool_call`），无 `gather`。**简历口径：** 架构支持无依赖子任务并行化，但当前标本是顺序调度；评测 `common_benchmark.run_parallel_inference` 的 `Semaphore + gather` 是**多题并行**，不是单题内同时跑 N 个子 Agent。完整对照见 [`05` §3.4](./05-工程化能力.md#34-并发到底指哪一层)。
 
 ## 10. 面试题索引（E13–E16）
 
@@ -1005,7 +1005,7 @@ final_answer_text = await self._handle_summary_with_context_limit_retry(
   - 时间口径只讲「业余比赛基础 + 实习期工程化接入」两个阶段；没有可核对记录时，不拆成精确人天，也不虚构 Prompt 与工程代码的百分比分配。
   - 贡献重点是把比赛原型变成不阻断主链路、可追踪、可回退的业务能力，不把 Prompt / 评测咨询说成自己独立完成，也不把开源标本说成自己的原创框架。
 - **易踩坑：** 说成博士后带队共同开发，临场给出无法核对的工期占比，或把比赛原型与业务上线版本混为一谈。
-- **回看标本 + 详见：** 职责与来源回看本文 [§0.3](#03-诚实边界总表) 以及 [`02` §0.1](./02-面试问答.md#01-职责与来源)；工程编排细节回看 `src/core/orchestrator.py`，不把标本代码直接认领为个人原创。
+- **回看标本 + 详见：** 职责与来源回看本文 [§0.3](#03-诚实边界总表) 以及 [`01` §0.1](./01-通用问答.md#01-职责与来源)；工程编排细节回看 `src/core/orchestrator.py`，不把标本代码直接认领为个人原创。
 
 ## 11. 回看清单
 
@@ -1017,4 +1017,4 @@ final_answer_text = await self._handle_summary_with_context_limit_retry(
 3. `src/core/orchestrator.py` + 本文 [§3](#3-调用链精读主循环)：主循环分流 → [§6](#6-调用链精读run_sub_agent) → [§7](#7-调用链精读主-agent-final-summary)。
 4. **本文 §4 +** `config/agent_prompts/main_agent_prompt_gaia.py` / `sub_worker.py`：计划、委派、收束大纲（勿默写全文）。
 5. `src/logging/task_tracer.py`：`session_id`、主/子 history 分存。
-6. 对比 `common_benchmark.py` 的 `run_parallel_inference`（[`05` §3.6](./05-工程化能力.md#36-第二类并发评测多题并行)）：多题并行 ≠ 单题内 Sub 并发；G22/G23 详答见 [`05` §3](./05-工程化能力.md#3-预算熔断--两类并发g22g23)。
+6. 对比 `common_benchmark.py` 的 `run_parallel_inference`（[`05` §3.4](./05-工程化能力.md#34-并发到底指哪一层)）：多题并行 ≠ 单题内 Sub 并发；G22/G23 详答见 [`05` §3](./05-工程化能力.md#3-预算熔断--两类并发g22g23)。

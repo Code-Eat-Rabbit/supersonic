@@ -1,0 +1,443 @@
+- generic [ref=e2]:
+  - 'menu "Period: Last 3 months" [ref=e530]':
+    - menuitemradio "All" [active] [ref=e531]
+    - menuitemradio "Last month" [ref=e535]
+    - menuitemradio "Last 3 months" [checked] [ref=e539]
+    - menuitemradio "Last 6 months" [ref=e543]
+    - menuitemradio "Last 12 months" [ref=e547]
+    - menuitemradio "Last 24 months" [ref=e551]
+  - generic [ref=e3]:
+    - link "Skip to content" [ref=e4] [cursor=pointer]:
+      - /url: "#start-of-content"
+    - banner [ref=e6]:
+      - heading "Navigation Menu" [level=2] [ref=e7]
+      - generic [ref=e8]:
+        - link "Homepage" [ref=e10] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e13]:
+          - navigation "Global" [ref=e16]:
+            - list [ref=e17]:
+              - listitem [ref=e18]:
+                - button "Platform" [ref=e20] [cursor=pointer]
+              - listitem [ref=e23]:
+                - button "Solutions" [ref=e25] [cursor=pointer]
+              - listitem [ref=e28]:
+                - button "Resources" [ref=e30] [cursor=pointer]
+              - listitem [ref=e33]:
+                - button "Open Source" [ref=e35] [cursor=pointer]
+              - listitem [ref=e38]:
+                - button "Enterprise" [ref=e40] [cursor=pointer]
+              - listitem [ref=e43]:
+                - link "Pricing" [ref=e44] [cursor=pointer]:
+                  - /url: https://github.com/pricing
+          - generic [ref=e46]:
+            - button "Search or jump to…" [ref=e49] [cursor=pointer]
+            - link "Sign in" [ref=e54] [cursor=pointer]:
+              - /url: /login?return_to=https%3A%2F%2Fgithub.com%2Ftencentmusic%2Fsupersonic%2Fgraphs%2Fcontributors
+            - link "Sign up" [ref=e55] [cursor=pointer]:
+              - /url: /signup?ref_cta=Sign+up&ref_loc=header+logged+out&ref_page=%2F%3Cuser-name%3E%2F%3Crepo-name%3E%2Frepos%2Finsights%2Fcontributors%2Findex&source=header-repo&source_repo=tencentmusic%2Fsupersonic
+            - button "Appearance settings" [ref=e58] [cursor=pointer]
+  - main [ref=e62]:
+    - generic [ref=e63]:
+      - generic [ref=e64]:
+        - generic [ref=e66]:
+          - link "tencentmusic" [ref=e70] [cursor=pointer]:
+            - /url: /tencentmusic
+          - generic [ref=e71]: /
+          - strong [ref=e72]:
+            - link "supersonic" [ref=e73] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic
+          - generic [ref=e74]: Public
+        - generic [ref=e75]:
+          - list:
+            - listitem [ref=e76]:
+              - link "You must be signed in to change notification settings" [ref=e77] [cursor=pointer]:
+                - /url: /login?return_to=%2Ftencentmusic%2Fsupersonic
+                - text: Notifications
+            - listitem [ref=e80]:
+              - link "Fork 987" [ref=e81] [cursor=pointer]:
+                - /url: /login?return_to=%2Ftencentmusic%2Fsupersonic
+                - text: Fork
+                - generic "987" [ref=e84]
+            - listitem [ref=e85]:
+              - link "You must be signed in to star a repository" [ref=e87] [cursor=pointer]:
+                - /url: /login?return_to=%2Ftencentmusic%2Fsupersonic
+                - text: Star
+                - generic "4978 users starred this repository" [ref=e90]: 5k
+      - navigation "Repository" [ref=e91]:
+        - list [ref=e92]:
+          - listitem [ref=e93]:
+            - link "Code" [ref=e94] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic
+          - listitem [ref=e98]:
+            - link "Issues 331" [ref=e99] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic/issues
+              - generic [ref=e103]: Issues
+              - generic "331" [ref=e104]
+          - listitem [ref=e105]:
+            - link "Pull requests 1" [ref=e106] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic/pulls
+              - generic [ref=e109]: Pull requests
+              - generic "1" [ref=e110]
+          - listitem [ref=e111]:
+            - link "Discussions" [ref=e112] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic/discussions
+          - listitem [ref=e116]:
+            - link "Actions" [ref=e117] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic/actions
+          - listitem [ref=e121]:
+            - link "Projects" [ref=e122] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic/projects
+          - listitem [ref=e126]:
+            - link "Wiki" [ref=e127] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic/wiki
+          - listitem [ref=e131]:
+            - link "Security and quality" [ref=e132] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic/security
+          - listitem [ref=e136]:
+            - link "Insights" [ref=e137] [cursor=pointer]:
+              - /url: /tencentmusic/supersonic/pulse
+    - generic [ref=e142]:
+      - 'heading "Insights: tencentmusic/supersonic" [level=1] [ref=e143]'
+      - generic [ref=e145]:
+        - navigation "Insights" [ref=e147]:
+          - link "Pulse" [ref=e148] [cursor=pointer]:
+            - /url: /tencentmusic/supersonic/pulse
+          - link "Contributors" [ref=e149]:
+            - /url: /tencentmusic/supersonic/graphs/contributors
+          - link "Community standards" [ref=e150] [cursor=pointer]:
+            - /url: /tencentmusic/supersonic/community
+          - link "Commits" [ref=e151] [cursor=pointer]:
+            - /url: /tencentmusic/supersonic/graphs/commit-activity
+          - link "Code frequency" [ref=e152] [cursor=pointer]:
+            - /url: /tencentmusic/supersonic/graphs/code-frequency
+          - link "Dependency graph" [ref=e153] [cursor=pointer]:
+            - /url: /tencentmusic/supersonic/network/dependencies
+          - link "Network" [ref=e154] [cursor=pointer]:
+            - /url: /tencentmusic/supersonic/network
+          - link "Forks" [ref=e155] [cursor=pointer]:
+            - /url: /tencentmusic/supersonic/forks
+        - generic [ref=e159]:
+          - generic [ref=e160]:
+            - generic [ref=e161]:
+              - heading "Contributors" [level=1] [ref=e162]
+              - paragraph [ref=e163]: Contributions per week to master, excluding merge commits
+            - generic [ref=e164]:
+              - 'button "Period: Last 3 months" [expanded] [ref=e165] [cursor=pointer]'
+              - 'button "Contributions: Commits" [ref=e168] [cursor=pointer]'
+          - generic [ref=e171]:
+            - generic [ref=e220]:
+              - generic [ref=e221]:
+                - generic [ref=e223]:
+                  - heading "Commits over time" [level=2] [ref=e224]
+                  - generic [ref=e226]: Weekly from 2026年4月25日 to 2026年7月19日
+                - generic [ref=e228]:
+                  - button "Chart options" [ref=e229] [cursor=pointer]
+                  - button "Customization settings" [ref=e232] [cursor=pointer]
+              - region "Commits over time. Interactive chart." [ref=e235]:
+                - generic [ref=e236]:
+                  - generic [ref=e237]: Combination chart with 2 data series.
+                  - button "View as data table, Chart" [ref=e239] [cursor=pointer]
+                  - generic [ref=e240]: The chart has 2 X axes displaying Time, and navigator-x-axis.
+                  - generic [ref=e241]: The chart has 2 Y axes displaying Contributions, and navigator-y-axis.
+                - application [ref=e242]:
+                  - img "Interactive chart" [ref=e243]:
+                    - generic [ref=e250]: Contributions
+                    - generic [ref=e252]:
+                      - region "Commits, series 1 of 2. Bar series with 14 bars. Y axis, Contributions. X axis, Time." [ref=e253]:
+                        - img "Sunday, 19 Apr 2026, 2. Commits." [ref=e254]
+                        - img "Sunday, 26 Apr 2026, 1. Commits." [ref=e255]
+                        - img "Sunday, 3 May 2026, 3. Commits." [ref=e256]
+                        - img "Sunday, 10 May 2026, 0. Commits."
+                        - img "Sunday, 17 May 2026, 1. Commits." [ref=e257]
+                        - img "Sunday, 24 May 2026, 2. Commits." [ref=e258]
+                        - img "Sunday, 31 May 2026, 2. Commits." [ref=e259]
+                        - img "Sunday, 7 Jun 2026, 1. Commits." [ref=e260]
+                        - img "Sunday, 14 Jun 2026, 1. Commits." [ref=e261]
+                        - img "Sunday, 21 Jun 2026, 1. Commits." [ref=e262]
+                        - img "Sunday, 28 Jun 2026, 0. Commits."
+                        - img "Sunday, 5 Jul 2026, 0. Commits."
+                        - img "Sunday, 12 Jul 2026, 0. Commits."
+                        - img "Sunday, 19 Jul 2026, 0. Commits."
+                      - region "Navigator 1, series 2 of 2 with 163 data points. Y axis, navigator-y-axis. X axis, navigator-x-axis." [ref=e266]:
+                        - img "Sunday, 11 Jun 2023, 1. Navigator 1." [ref=e267]
+                        - img "Sunday, 18 Jun 2023, 0. Navigator 1." [ref=e268]
+                        - img "Sunday, 25 Jun 2023, 0. Navigator 1." [ref=e269]
+                        - img "Sunday, 2 Jul 2023, 2. Navigator 1." [ref=e270]
+                        - img "Sunday, 9 Jul 2023, 1. Navigator 1." [ref=e271]
+                        - img "Sunday, 16 Jul 2023, 3. Navigator 1." [ref=e272]
+                        - img "Sunday, 23 Jul 2023, 0. Navigator 1." [ref=e273]
+                        - img "Sunday, 30 Jul 2023, 9. Navigator 1." [ref=e274]
+                        - img "Sunday, 6 Aug 2023, 0. Navigator 1." [ref=e275]
+                        - img "Sunday, 13 Aug 2023, 3. Navigator 1." [ref=e276]
+                        - img "Sunday, 20 Aug 2023, 2. Navigator 1." [ref=e277]
+                        - img "Sunday, 27 Aug 2023, 10. Navigator 1." [ref=e278]
+                        - img "Sunday, 3 Sep 2023, 13. Navigator 1." [ref=e279]
+                        - img "Sunday, 10 Sep 2023, 33. Navigator 1." [ref=e280]
+                        - img "Sunday, 17 Sep 2023, 16. Navigator 1." [ref=e281]
+                        - img "Sunday, 24 Sep 2023, 20. Navigator 1." [ref=e282]
+                        - img "Sunday, 1 Oct 2023, 7. Navigator 1." [ref=e283]
+                        - img "Sunday, 8 Oct 2023, 47. Navigator 1." [ref=e284]
+                        - img "Sunday, 15 Oct 2023, 32. Navigator 1." [ref=e285]
+                        - img "Sunday, 22 Oct 2023, 22. Navigator 1." [ref=e286]
+                        - img "Sunday, 29 Oct 2023, 17. Navigator 1." [ref=e287]
+                        - img "Sunday, 5 Nov 2023, 34. Navigator 1." [ref=e288]
+                        - img "Sunday, 12 Nov 2023, 31. Navigator 1." [ref=e289]
+                        - img "Sunday, 19 Nov 2023, 18. Navigator 1." [ref=e290]
+                        - img "Sunday, 26 Nov 2023, 41. Navigator 1." [ref=e291]
+                        - img "Sunday, 3 Dec 2023, 16. Navigator 1." [ref=e292]
+                        - img "Sunday, 10 Dec 2023, 40. Navigator 1." [ref=e293]
+                        - img "Sunday, 17 Dec 2023, 40. Navigator 1." [ref=e294]
+                        - img "Sunday, 24 Dec 2023, 13. Navigator 1." [ref=e295]
+                        - img "Sunday, 31 Dec 2023, 14. Navigator 1." [ref=e296]
+                        - img "Sunday, 7 Jan 2024, 16. Navigator 1." [ref=e297]
+                        - img "Sunday, 14 Jan 2024, 38. Navigator 1." [ref=e298]
+                        - img "Sunday, 21 Jan 2024, 14. Navigator 1." [ref=e299]
+                        - img "Sunday, 28 Jan 2024, 16. Navigator 1." [ref=e300]
+                        - img "Sunday, 4 Feb 2024, 9. Navigator 1." [ref=e301]
+                        - img "Sunday, 11 Feb 2024, 1. Navigator 1." [ref=e302]
+                        - img "Sunday, 18 Feb 2024, 27. Navigator 1." [ref=e303]
+                        - img "Sunday, 25 Feb 2024, 18. Navigator 1." [ref=e304]
+                        - img "Sunday, 3 Mar 2024, 17. Navigator 1." [ref=e305]
+                        - img "Sunday, 10 Mar 2024, 26. Navigator 1." [ref=e306]
+                        - img "Sunday, 17 Mar 2024, 24. Navigator 1." [ref=e307]
+                        - img "Sunday, 24 Mar 2024, 15. Navigator 1." [ref=e308]
+                        - img "Sunday, 31 Mar 2024, 19. Navigator 1." [ref=e309]
+                        - img "Sunday, 7 Apr 2024, 12. Navigator 1." [ref=e310]
+                        - img "Sunday, 14 Apr 2024, 16. Navigator 1." [ref=e311]
+                        - img "Sunday, 21 Apr 2024, 17. Navigator 1." [ref=e312]
+                        - img "Sunday, 28 Apr 2024, 5. Navigator 1." [ref=e313]
+                        - img "Sunday, 5 May 2024, 10. Navigator 1." [ref=e314]
+                        - img "Sunday, 12 May 2024, 21. Navigator 1." [ref=e315]
+                        - img "Sunday, 19 May 2024, 21. Navigator 1." [ref=e316]
+                        - img "Sunday, 26 May 2024, 39. Navigator 1." [ref=e317]
+                        - img "Sunday, 2 Jun 2024, 21. Navigator 1." [ref=e318]
+                        - img "Sunday, 9 Jun 2024, 23. Navigator 1." [ref=e319]
+                        - img "Sunday, 16 Jun 2024, 26. Navigator 1." [ref=e320]
+                        - img "Sunday, 23 Jun 2024, 85. Navigator 1." [ref=e321]
+                        - img "Sunday, 30 Jun 2024, 51. Navigator 1." [ref=e322]
+                        - img "Sunday, 7 Jul 2024, 28. Navigator 1." [ref=e323]
+                        - img "Sunday, 14 Jul 2024, 22. Navigator 1." [ref=e324]
+                        - img "Sunday, 21 Jul 2024, 18. Navigator 1." [ref=e325]
+                        - img "Sunday, 28 Jul 2024, 23. Navigator 1." [ref=e326]
+                        - img "Sunday, 4 Aug 2024, 26. Navigator 1." [ref=e327]
+                        - img "Sunday, 11 Aug 2024, 17. Navigator 1." [ref=e328]
+                        - img "Sunday, 18 Aug 2024, 16. Navigator 1." [ref=e329]
+                        - img "Sunday, 25 Aug 2024, 8. Navigator 1." [ref=e330]
+                        - img "Sunday, 1 Sep 2024, 12. Navigator 1." [ref=e331]
+                        - img "Sunday, 8 Sep 2024, 31. Navigator 1." [ref=e332]
+                        - img "Sunday, 15 Sep 2024, 16. Navigator 1." [ref=e333]
+                        - img "Sunday, 22 Sep 2024, 16. Navigator 1." [ref=e334]
+                        - img "Sunday, 29 Sep 2024, 14. Navigator 1." [ref=e335]
+                        - img "Sunday, 6 Oct 2024, 62. Navigator 1." [ref=e336]
+                        - img "Sunday, 13 Oct 2024, 21. Navigator 1." [ref=e337]
+                        - img "Sunday, 20 Oct 2024, 12. Navigator 1." [ref=e338]
+                        - img "Sunday, 27 Oct 2024, 52. Navigator 1." [ref=e339]
+                        - img "Sunday, 3 Nov 2024, 10. Navigator 1." [ref=e340]
+                        - img "Sunday, 10 Nov 2024, 7. Navigator 1." [ref=e341]
+                        - img "Sunday, 17 Nov 2024, 12. Navigator 1." [ref=e342]
+                        - img "Sunday, 24 Nov 2024, 19. Navigator 1." [ref=e343]
+                        - img "Sunday, 1 Dec 2024, 23. Navigator 1." [ref=e344]
+                        - img "Sunday, 8 Dec 2024, 17. Navigator 1." [ref=e345]
+                        - img "Sunday, 15 Dec 2024, 26. Navigator 1." [ref=e346]
+                        - img "Sunday, 22 Dec 2024, 27. Navigator 1." [ref=e347]
+                        - img "Sunday, 29 Dec 2024, 10. Navigator 1." [ref=e348]
+                        - img "Sunday, 5 Jan 2025, 10. Navigator 1." [ref=e349]
+                        - img "Sunday, 12 Jan 2025, 4. Navigator 1." [ref=e350]
+                        - img "Sunday, 19 Jan 2025, 1. Navigator 1." [ref=e351]
+                        - img "Sunday, 26 Jan 2025, 1. Navigator 1." [ref=e352]
+                        - img "Sunday, 2 Feb 2025, 12. Navigator 1." [ref=e353]
+                        - img "Sunday, 9 Feb 2025, 12. Navigator 1." [ref=e354]
+                        - img "Sunday, 16 Feb 2025, 27. Navigator 1." [ref=e355]
+                        - img "Sunday, 23 Feb 2025, 12. Navigator 1." [ref=e356]
+                        - img "Sunday, 2 Mar 2025, 17. Navigator 1." [ref=e357]
+                        - img "Sunday, 9 Mar 2025, 20. Navigator 1." [ref=e358]
+                        - img "Sunday, 16 Mar 2025, 8. Navigator 1." [ref=e359]
+                        - img "Sunday, 23 Mar 2025, 7. Navigator 1." [ref=e360]
+                        - img "Sunday, 30 Mar 2025, 4. Navigator 1." [ref=e361]
+                        - img "Sunday, 6 Apr 2025, 6. Navigator 1." [ref=e362]
+                        - img "Sunday, 13 Apr 2025, 3. Navigator 1." [ref=e363]
+                        - img "Sunday, 20 Apr 2025, 2. Navigator 1." [ref=e364]
+                        - img "Sunday, 27 Apr 2025, 3. Navigator 1." [ref=e365]
+                        - img "Sunday, 4 May 2025, 7. Navigator 1." [ref=e366]
+                        - img "Sunday, 11 May 2025, 1. Navigator 1." [ref=e367]
+                        - img "Sunday, 18 May 2025, 4. Navigator 1." [ref=e368]
+                        - img "Sunday, 25 May 2025, 6. Navigator 1." [ref=e369]
+                        - img "Sunday, 1 Jun 2025, 1. Navigator 1." [ref=e370]
+                        - img "Sunday, 8 Jun 2025, 5. Navigator 1." [ref=e371]
+                        - img "Sunday, 15 Jun 2025, 4. Navigator 1." [ref=e372]
+                        - img "Sunday, 22 Jun 2025, 6. Navigator 1." [ref=e373]
+                        - img "Sunday, 29 Jun 2025, 1. Navigator 1." [ref=e374]
+                        - img "Sunday, 6 Jul 2025, 9. Navigator 1." [ref=e375]
+                        - img "Sunday, 13 Jul 2025, 3. Navigator 1." [ref=e376]
+                        - img "Sunday, 20 Jul 2025, 0. Navigator 1." [ref=e377]
+                        - img "Sunday, 27 Jul 2025, 4. Navigator 1." [ref=e378]
+                        - img "Sunday, 3 Aug 2025, 5. Navigator 1." [ref=e379]
+                        - img "Sunday, 10 Aug 2025, 0. Navigator 1." [ref=e380]
+                        - img "Sunday, 17 Aug 2025, 4. Navigator 1." [ref=e381]
+                        - img "Sunday, 24 Aug 2025, 0. Navigator 1." [ref=e382]
+                        - img "Sunday, 31 Aug 2025, 0. Navigator 1." [ref=e383]
+                        - img "Sunday, 7 Sep 2025, 0. Navigator 1." [ref=e384]
+                        - img "Sunday, 14 Sep 2025, 0. Navigator 1." [ref=e385]
+                        - img "Sunday, 21 Sep 2025, 8. Navigator 1." [ref=e386]
+                        - img "Sunday, 28 Sep 2025, 0. Navigator 1." [ref=e387]
+                        - img "Sunday, 5 Oct 2025, 0. Navigator 1." [ref=e388]
+                        - img "Sunday, 12 Oct 2025, 1. Navigator 1." [ref=e389]
+                        - img "Sunday, 19 Oct 2025, 4. Navigator 1." [ref=e390]
+                        - img "Sunday, 26 Oct 2025, 0. Navigator 1." [ref=e391]
+                        - img "Sunday, 2 Nov 2025, 1. Navigator 1." [ref=e392]
+                        - img "Sunday, 9 Nov 2025, 0. Navigator 1." [ref=e393]
+                        - img "Sunday, 16 Nov 2025, 0. Navigator 1." [ref=e394]
+                        - img "Sunday, 23 Nov 2025, 1. Navigator 1." [ref=e395]
+                        - img "Sunday, 30 Nov 2025, 0. Navigator 1." [ref=e396]
+                        - img "Sunday, 7 Dec 2025, 1. Navigator 1." [ref=e397]
+                        - img "Sunday, 14 Dec 2025, 0. Navigator 1." [ref=e398]
+                        - img "Sunday, 21 Dec 2025, 0. Navigator 1." [ref=e399]
+                        - img "Sunday, 28 Dec 2025, 0. Navigator 1." [ref=e400]
+                        - img "Sunday, 4 Jan 2026, 0. Navigator 1." [ref=e401]
+                        - img "Sunday, 11 Jan 2026, 0. Navigator 1." [ref=e402]
+                        - img "Sunday, 18 Jan 2026, 0. Navigator 1." [ref=e403]
+                        - img "Sunday, 25 Jan 2026, 0. Navigator 1." [ref=e404]
+                        - img "Sunday, 1 Feb 2026, 0. Navigator 1." [ref=e405]
+                        - img "Sunday, 8 Feb 2026, 5. Navigator 1." [ref=e406]
+                        - img "Sunday, 15 Feb 2026, 3. Navigator 1." [ref=e407]
+                        - img "Sunday, 22 Feb 2026, 0. Navigator 1." [ref=e408]
+                        - img "Sunday, 1 Mar 2026, 1. Navigator 1." [ref=e409]
+                        - img "Sunday, 8 Mar 2026, 1. Navigator 1." [ref=e410]
+                        - img "Sunday, 15 Mar 2026, 0. Navigator 1." [ref=e411]
+                        - img "Sunday, 22 Mar 2026, 1. Navigator 1." [ref=e412]
+                        - img "Sunday, 29 Mar 2026, 2. Navigator 1." [ref=e413]
+                        - img "Sunday, 5 Apr 2026, 3. Navigator 1." [ref=e414]
+                        - img "Sunday, 12 Apr 2026, 0. Navigator 1." [ref=e415]
+                        - img "Sunday, 19 Apr 2026, 2. Navigator 1." [ref=e416]
+                        - img "Sunday, 26 Apr 2026, 1. Navigator 1." [ref=e417]
+                        - img "Sunday, 3 May 2026, 3. Navigator 1." [ref=e418]
+                        - img "Sunday, 10 May 2026, 0. Navigator 1." [ref=e419]
+                        - img "Sunday, 17 May 2026, 1. Navigator 1." [ref=e420]
+                        - img "Sunday, 24 May 2026, 2. Navigator 1." [ref=e421]
+                        - img "Sunday, 31 May 2026, 2. Navigator 1." [ref=e422]
+                        - img "Sunday, 7 Jun 2026, 1. Navigator 1." [ref=e423]
+                        - img "Sunday, 14 Jun 2026, 1. Navigator 1." [ref=e424]
+                        - img "Sunday, 21 Jun 2026, 1. Navigator 1." [ref=e425]
+                        - img "Sunday, 28 Jun 2026, 0. Navigator 1." [ref=e426]
+                        - img "Sunday, 5 Jul 2026, 0. Navigator 1." [ref=e427]
+                        - img "Sunday, 12 Jul 2026, 0. Navigator 1." [ref=e428]
+                        - img "Sunday, 19 Jul 2026, 0. Navigator 1." [ref=e429]
+                    - generic [ref=e435]:
+                      - generic [ref=e436]: 4 May
+                      - generic [ref=e437]: 18 May
+                      - generic [ref=e438]: 1 Jun
+                      - generic [ref=e439]: 15 Jun
+                      - generic [ref=e440]: 29 Jun
+                      - generic [ref=e441]: 13 Jul
+                    - generic [ref=e442]:
+                      - generic [ref=e443]:
+                        - generic [ref=e444]: "2024"
+                        - text: "2024"
+                      - generic [ref=e445]:
+                        - generic [ref=e446]: "2025"
+                        - text: "2025"
+                      - generic [ref=e447]:
+                        - generic [ref=e448]: "2026"
+                        - text: "2026"
+                    - generic [ref=e449]:
+                      - generic [ref=e450]: "0"
+                      - generic [ref=e451]: "1"
+                      - generic [ref=e452]: "2"
+                  - generic:
+                    - region "Commits over time Axis zoom":
+                      - slider "Start of selected range": "92"
+                      - slider "End of selected range": "100"
+                - generic: End of interactive chart.
+            - list [ref=e461]:
+              - listitem [ref=e462]:
+                - generic [ref=e464]:
+                  - generic [ref=e465]:
+                    - generic [ref=e466]:
+                      - link "jerryjzhang" [ref=e468] [cursor=pointer]:
+                        - /url: /jerryjzhang
+                      - generic [ref=e470]:
+                        - heading "jerryjzhang 's Commits" [level=2] [ref=e471]:
+                          - generic [ref=e472]:
+                            - link "jerryjzhang" [ref=e473] [cursor=pointer]:
+                              - /url: /jerryjzhang
+                            - generic [ref=e474]: "'s Commits"
+                        - generic [ref=e476]:
+                          - link "12 commits" [ref=e477] [cursor=pointer]:
+                            - /url: /tencentmusic/supersonic/commits?author=jerryjzhang
+                          - generic [ref=e478]:
+                            - generic [ref=e479]: 137 ++
+                            - generic [ref=e480]: 57 --
+                    - generic [ref=e481]:
+                      - generic [ref=e482]: "#1"
+                      - button "Chart options" [ref=e484] [cursor=pointer]
+                      - button "Customization settings" [ref=e487] [cursor=pointer]
+                  - region "jerryjzhang's Commits. Interactive chart." [ref=e490]:
+                    - generic [ref=e491]:
+                      - generic [ref=e492]: Bar chart with 13 bars.
+                      - button "View as data table, Chart" [ref=e494] [cursor=pointer]
+                      - generic [ref=e495]: The chart has 1 X axis displaying Time. Data ranges from 2026-04-26 00:00:00 to 2026-07-19 00:00:00.
+                      - generic [ref=e496]: The chart has 1 Y axis displaying Contributions. Data ranges from 0 to 3.
+                    - application [ref=e497]:
+                      - img "Interactive chart" [ref=e498]:
+                        - generic [ref=e504]: Contributions
+                        - generic [ref=e507]:
+                          - img "Sunday, 26 Apr 2026, 1. Commits." [ref=e508]
+                          - img "Sunday, 3 May 2026, 3. Commits." [ref=e509]
+                          - img "Sunday, 10 May 2026, 0. Commits."
+                          - img "Sunday, 17 May 2026, 1. Commits." [ref=e510]
+                          - img "Sunday, 24 May 2026, 2. Commits." [ref=e511]
+                          - img "Sunday, 31 May 2026, 2. Commits." [ref=e512]
+                          - img "Sunday, 7 Jun 2026, 1. Commits." [ref=e513]
+                          - img "Sunday, 14 Jun 2026, 1. Commits." [ref=e514]
+                          - img "Sunday, 21 Jun 2026, 1. Commits." [ref=e515]
+                          - img "Sunday, 28 Jun 2026, 0. Commits."
+                          - img "Sunday, 5 Jul 2026, 0. Commits."
+                          - img "Sunday, 12 Jul 2026, 0. Commits."
+                          - img "Sunday, 19 Jul 2026, 0. Commits."
+                        - generic [ref=e516]:
+                          - generic [ref=e517]: May '26
+                          - generic [ref=e518]: Jun '26
+                          - generic [ref=e519]: Jul '26
+                        - generic [ref=e520]:
+                          - generic [ref=e521]: "0"
+                          - generic [ref=e522]: "1"
+                          - generic [ref=e523]: "2"
+                          - generic [ref=e524]: "3"
+                    - generic: End of interactive chart.
+              - listitem [ref=e527]
+  - contentinfo [ref=e186]:
+    - heading "Footer" [level=2] [ref=e187]
+    - generic [ref=e188]:
+      - generic [ref=e189]:
+        - link "GitHub Homepage" [ref=e190] [cursor=pointer]:
+          - /url: https://github.com
+        - generic [ref=e193]: © 2026 GitHub, Inc.
+      - navigation "Footer" [ref=e194]:
+        - heading "Footer navigation" [level=3] [ref=e195]
+        - list "Footer navigation" [ref=e196]:
+          - listitem [ref=e197]:
+            - link "Terms" [ref=e198] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/github-terms/github-terms-of-service
+          - listitem [ref=e199]:
+            - link "Privacy" [ref=e200] [cursor=pointer]:
+              - /url: https://docs.github.com/site-policy/privacy-policies/github-privacy-statement
+          - listitem [ref=e201]:
+            - link "Security" [ref=e202] [cursor=pointer]:
+              - /url: https://github.com/security
+          - listitem [ref=e203]:
+            - link "Status" [ref=e204] [cursor=pointer]:
+              - /url: https://www.githubstatus.com/
+          - listitem [ref=e205]:
+            - link "Community" [ref=e206] [cursor=pointer]:
+              - /url: https://github.community/
+          - listitem [ref=e207]:
+            - link "Docs" [ref=e208] [cursor=pointer]:
+              - /url: https://docs.github.com/
+          - listitem [ref=e209]:
+            - link "Contact" [ref=e210] [cursor=pointer]:
+              - /url: https://support.github.com?tags=dotcom-footer
+          - listitem [ref=e211]:
+            - button "Manage cookies" [ref=e213] [cursor=pointer]
+          - listitem [ref=e214]:
+            - button "Do not share my personal information" [ref=e216] [cursor=pointer]
